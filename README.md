@@ -37,7 +37,7 @@ The output from EC-Earth must have the standard name with the format as:
 ICMGGECE3+197901 # output on gaussian grid
 ICMSHECE3+197901 # output on spectral coordinate, must be changed to gaussian grid
 ```
-The script is recommended to be used together with the scheduler job_scheduler.sh.
+The script is recommended to be used together with the scheduler [job_scheduler.sh](https://github.com/blue-action/ece-postprocess/blob/master/job_scheduler.sh).
 
 ## job_scheduler.sh
 This bash script aim to schedule and execute job for the post-processing of EC-Earth output on Cartesius.
