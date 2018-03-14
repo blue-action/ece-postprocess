@@ -21,7 +21,7 @@ It also saves the following fields as netcdf files (3 hourly): <br />
                   * Soil temperature level 2              [K] <br />
                   * Soil temperature level 3              [K] <br />
                   * Soil temperature level 4              [K] <br />
-<br />
+
 It needs two input parameters:<br />
 * time (eg. 197901)<br />
 * input and output path<br />
