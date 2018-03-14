@@ -25,14 +25,14 @@ It also saves the following fields as netcdf files (3 hourly): <br />
 It needs two input parameters:<br />
 * time (eg. 197901)<br />
 * input and output path<br />
-<br />
+
 where time is obtained by sys.stdin.readline(), thus the script will be executed through: <br />
 ```
-$ python AMET_land_surface.py < input_time.txt <br />
+$ python AMET_land_surface.py < input_time.txt
 ```
 The input and output path shall be specified inside the script (in the input zone). <br />
 
-The output from EC-Earth must have the standard name with the format as: <br />
+The output from EC-Earth must have the standard name with the format as:
 ```
 ICMGGECE3+197901 # output on gaussian grid
 ICMSHECE3+197901 # output on spectral coordinate, must be changed to gaussian grid
