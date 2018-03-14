@@ -26,12 +26,13 @@
 # specify the global counter
 counter=1
 # specify date and month list for file names
-year=1979
+year_start=1979
+year_end=2016
 month=('01' '02' '03' '04' '05' '06' '07' '08' '09' '10' '11' '12')
 # specify the counter for month
 c_month=0
 # loop for post-processing
-for (( counter=1; counter<=1; counter++))
+for (( counter=1; counter<=((${year_end}-${year_start}+1)*12); counter++))
 do
   # go to the project directory
   cd /projects/0/blueactn/ECEARTH/ECE3/output/ifs
