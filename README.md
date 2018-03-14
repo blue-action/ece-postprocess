@@ -40,4 +40,10 @@ ICMSHECE3+197901 # output on spectral coordinate, must be changed to gaussian gr
 The script is recommended to be used together with the scheduler [job_scheduler.sh](https://github.com/blue-action/ece-postprocess/blob/master/job_scheduler.sh).
 
 ## job_scheduler.sh
-This bash script aim to schedule and execute job for the post-processing of EC-Earth output on Cartesius.
+This bash script aim to schedule and execute job for the post-processing of EC-Earth output on Cartesius.<br />
+The user must specify the following things:
+* starting and ending time (int)
+* copy EC-Earth output from project folder to customised place
+* use cdo to transfer the output on spectral coordinate to gaussian grid
+* execute the post-processing script [AMET_land_surface.py](https://github.com/geek-yang/ece-postprocess/blob/master/AMET_land_surface.py)
+* history record (log)
