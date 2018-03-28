@@ -70,11 +70,13 @@ def cli_parser():
     parser.add('--archive', help='archive location [path]', type=is_dir,
                action=FullPaths, env_var='ece_archivedir', required=True)
     parser.add('--expname', help='EC-EARTH experiment name',
-               env_var='ece_expname')
+               env_var='ece_expname', required=True)
     results = parser.parse_args()
     return results
 
 
 if __name__ == "__main__":
     results = cli_parser()
-    AMET_land_surface.postprocess(rundir, outputdir, archive, expname, leg)
+    AMET_land_surface.postprocess(results.rundir, results.outputdir,
+                                  results.archive, results.expname,
+                                  results.leg)

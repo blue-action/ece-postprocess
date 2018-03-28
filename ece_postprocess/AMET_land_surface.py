@@ -74,6 +74,7 @@ import pygrib
 import errno
 import subprocess
 import shutil
+import glob
 
 ##########################################################################
 ###########################   Units vacabulory   #########################
@@ -112,7 +113,7 @@ class postprocess:
         ####################################################################################
         ################################   Input zone  #####################################
         leg = str(leg).zfill(3)  # format leg as str with leading zeros
-        datapath = os.path.join(rundir, expname, output, leg)
+        datapath = os.path.join(rundir, expname, 'output', 'ifs', leg)
         ####################################################################################
         # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
         logging.basicConfig(filename = outputdir + os.sep + 'history.log',
@@ -120,7 +121,7 @@ class postprocess:
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         ####################################################################################
         # convert sp2gpl and copy to tmpdir
-        tmpdir = os.path.join(outputdir, tmp)
+        tmpdir = os.path.join(outputdir, 'tmp')
         self.sp2gpl(datapath, expname, outputdir, tmpdir)
         ####################################################################################
         self.postprocess(tmpdir, expname, outputdir)
@@ -206,12 +207,10 @@ class postprocess:
             # find starting time of leg from filename in leg directory
             filenames = [os.path.basename(f) for f in glob.glob(os.path.join(datapath, 'ICMGG*'))]
             file_time = [a for a in [a.strip('ICMGG' + expname + '+') for a in filenames] if int(a)][0]
-
-            file_time = [a for a in [a.strip('ICMGG' + expname + '+') for a in glob.glob('ICMGG*')] if int(a)][0]
-            print("Start retrieving datasets ICMSHECE and ICMGGECE for the time %d" % (file_time))
-            logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time %d" % (file_time))
-            ICMSHECE = pygrib.open(datapath + os.sep + 'ICMSHECE3+%d' % (file_time))
-            ICMGGECE = pygrib.open(datapath + os.sep + 'ICMGGECE3+%d' % (file_time))
+            print("Start retrieving datasets ICMSHECE and ICMGGECE for the time {}".format(file_time))
+            logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time {}".format(file_time))
+            ICMGGECE = pygrib.open(os.path.join(datapath, "ICMGG{}+{}".format(expname, file_time)))
+            ICMSHECE = pygrib.open(os.path.join(datapath, "ICMSH{}+{}".format(expname, file_time)))
             print("Retrieving datasets successfully and return the key!")
             # extract the basic information about the dataset
             num_message_SH = ICMSHECE.messages
@@ -228,11 +227,11 @@ class postprocess:
             longitude = lons[0,:]
             print("====================================================")
             print("==============  Output Data Profile  ===============")
-            print("There are %d messages included in the spectral field" % (num_message_SH))
-            print("There are %d messages included in the Gaussian grid" % (num_message_GG))
-            print("There are %d days in this month (%d)" % (days,file_time))
+            print("There are {} messages included in the spectral field".format(num_message_SH))
+            print("There are {} messages included in the Gaussian grid".format(num_message_GG))
+            print("There are {} days in this month ({})".format(days,file_time))
             print("====================================================")
-            logging.info("Retrieving variables for %d successfully!" % (file_time))
+            logging.info("Retrieving variables for {} successfully!".format(file_time))
             return ICMSHECE, ICMGGECE, num_message_SH, num_message_GG, num_record, days, latitude, longitude
 
 
@@ -249,14 +248,14 @@ class postprocess:
             plt.plot(latitude,E_total_monthly_mean,'b-',label='EC-earth')
             plt.axhline(y=0, color='r',ls='--')
             #plt.hold()
-            plt.title('Total Atmospheric Meridional Energy Transport %d' % (filename))
+            plt.title('Total Atmospheric Meridional Energy Transport {}'.format(filename))
             #plt.legend()
             plt.xlabel("Laitude")
             plt.xticks(np.linspace(-90,90,13))
             #plt.yticks(np.linspace(0,6,7))
             plt.ylabel("Meridional Energy Transport (PW)")
             #plt.show()
-            fig1.savefig(output_path + os.sep + 'AMET_EC-earth_total_%d.png' % (filename), dpi = 300)
+            fig1.savefig(output_path + os.sep + 'AMET_EC-earth_total_{}.png'.format(filename), dpi = 300)
             plt.close(fig1)
 
 
@@ -271,7 +270,7 @@ class postprocess:
             logging.info("Start creating netcdf file for total meridional energy transport and each component at each grid point.")
             # wrap the datasets into netcdf file
             # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_%d_E_point.nc' % (filename),'w',format = 'NETCDF3_64BIT')
+            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_E_point.nc'.format(filename),'w',format = 'NETCDF3_64BIT')
             # create dimensions for netcdf data
             lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
             lon_wrap_dim = data_wrap.createDimension('longitude',Dim_longitude)
@@ -331,7 +330,7 @@ class postprocess:
             logging.info("Start creating netcdf files for the zonal integral of total meridional energy transport and each component.")
             # wrap the datasets into netcdf file
             # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_%d_E_zonal_int.nc' % (filename),'w',format = 'NETCDF3_64BIT')
+            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_E_zonal_int.nc'.format(filename),'w',format = 'NETCDF3_64BIT')
             # create dimensions for netcdf data
             lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
             # create coordinate variables for 3-dimensions
@@ -382,7 +381,7 @@ class postprocess:
             hours = np.arange(3,(num_record+1) * 3,3,dtype=int)
             # wrap the datasets into netcdf file
             # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_%d_land_surface.nc' % (filename),'w',format = 'NETCDF3_64BIT')
+            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_land_surface.nc'.format(filename),'w',format = 'NETCDF3_64BIT')
             # create dimensions for netcdf data
             lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
             lon_wrap_dim = data_wrap.createDimension('longitude',Dim_longitude)
@@ -411,7 +410,7 @@ class postprocess:
             # variable attributes
             lat_wrap_var.units = 'degree_north'
             lon_wrap_var.units = 'degree_east'
-            time_wrap_var.units = 'hours since %d01 00:00:00' % (filename)
+            time_wrap_var.units = 'hours since {}01 00:00:00'.format(filename)
 
             surface_runoff_var.units = 'm'
             subsurface_runoff_var.units = 'm'
@@ -472,7 +471,7 @@ class postprocess:
         # create/cleanup tmpdir       
         try:
             shutil.rmtree(tmpdir)  # cleanup tmpdir
-        except IOError:
+        except OSError:
             pass
         try:
             os.makedirs(tmpdir)
@@ -482,8 +481,8 @@ class postprocess:
         # get filenames to convert
         filenames = [os.path.basename(f) for f in glob.glob(os.path.join(datapath, 'ICMGG*'))]
         file_time = [a for a in [a.strip('ICMGG' + expname + '+') for a in filenames] if int(a)][0]
-        print("Start retrieving datasets ICMSHECE and ICMGGECE for the time %d" % (file_time))
-        logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time %d" % (file_time))
+        print("Start retrieving datasets ICMSHECE and ICMGGECE for the time {}".format(file_time))
+        logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time {}".format(file_time))
         # define filenames
         ICMGG = "ICMGG{}+{}".format(expname, file_time)
         ICMSH = "ICMSH{}+{}".format(expname, file_time)
@@ -616,8 +615,8 @@ class postprocess:
             index_SH = index_SH + 91
             # jump the lograithm of surface pressure (2 records)
             index_SH = index_SH + 2
-            print("Retrieving datasets on the spectral fields successfully for the %d record!" % (i+1))
-            logging.info("Retrieving variables on the spectral fields for the %d record successfully!" % (i+1))
+            print("Retrieving datasets on the spectral fields successfully for the {} record!".format(i+1))
+            logging.info("Retrieving variables on the spectral fields for the {} record successfully!".format(i+1))
             ############################################################
             ######       Get all the fields - Gaussian grid      #######
             ############################################################
@@ -683,8 +682,8 @@ class postprocess:
             sp = key_sp.values
             # jump the other variables that are not relevant
             index_GG = index_GG + 11
-            print("Retrieving datasets on the Gaussian grid successfully for the %d record!" % (i+1))
-            logging.info("Retrieving variables on the Gaussian grid for the %d record successfully!" % (i+1))
+            print("Retrieving datasets on the Gaussian grid successfully for the {} record!".format(i+1))
+            logging.info("Retrieving variables on the Gaussian grid for the {} record successfully!".format(i+1))
             ############################################################
             ######    for the computation of tendency terms      #######
             ############################################################
