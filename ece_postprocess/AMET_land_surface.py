@@ -174,7 +174,7 @@ class postprocess:
             if e.errno != errno.EEXIST:
                 raise
         # archive using rsync
-        subprocess.run(['rsync', '-va', '--recursive', datapath, archive_dir], shell=True, check=True)
+        subprocess.check_call(['rsync', '-va', '--recursive', datapath, archive_dir], shell=True, check=True)
         # check if original files need to be removed
         if remove:
             # remove original files
@@ -544,9 +544,9 @@ class postprocess:
         ICMGG = "ICMGG{}+{}".format(expname, file_time)
         ICMSH = "ICMSH{}+{}".format(expname, file_time)
         # sp2gpl -> tmpdir
-        subprocess.run(['cdo', 'sp2gpl', os.path.join(datapath, ICMSH), os.path.join(tmpdir, ICMSH)])
+        subprocess.check_call(['cdo', 'sp2gpl', os.path.join(datapath, ICMSH), os.path.join(tmpdir, ICMSH)])
         # rsync the guassian grid output
-        subprocess.run(['rsync', '-va', os.path.join(datapath, ICMGG), os.path.join(tmpdir, ICMGG)], shell=True, check=True) 
+        subprocess.check_call(['rsync', '-va', os.path.join(datapath, ICMGG), os.path.join(tmpdir, ICMGG)], shell=True, check=True) 
 
 
     @staticmethod

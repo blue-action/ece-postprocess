@@ -31,7 +31,7 @@ def is_dir(dirname):
     """
     if not os.path.isdir(dirname):
         msg = "{0} is not a directory".format(dirname)
-        raise argparse.ArgumentTypeError(msg)
+        raise configargparse.ArgumentTypeError(msg)
     else:
         return dirname
 

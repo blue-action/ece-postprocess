@@ -6,14 +6,16 @@ Postprocess EC-EARTH output for the Blue Action project"""
 
 # define experiment information
 {% set EXPNAME = "4RXF" %}
-{% set RUNDIR = "4RXF" %}
-{% set POSTPROCESS = "4RXF" %}
-{% set ARCHIVE = "4RXF" %}
+{% set RUNDIR = "/projects/0/blueactn/ECEARTH/" %}
+{% set POSTPROCESS = "/projects/0/blueactn/postprocess/" %}
+{% set ARCHIVE = "/projects/0/blueactn/archive/" %}
+{% set START_LEG = "1" %}
+{% set END_LEG = "2" %}
 
 [scheduling]
     cycling mode = integer
-    initial cycle point = 1
-    final cycle point = {{N_DATASETS}}
+    initial cycle point = {{START_LEG}}
+    final cycle point = {{END_LEG}}
     max active cycle points = 5
     # runahead limit = P5 # (alternative limiting method)
     [[dependencies]]
@@ -35,7 +37,7 @@ Postprocess EC-EARTH output for the Blue Action project"""
     [[postprocess]]
         retry delays = 48*PT6H
         script = """
-ece-postprocess --rundir=${RUNDIR} --expname=${EXPNAME} --postprocess=${POSTPROCESS} --leg=${CYLC_TASK_NUMBER}
+ece-postprocess --rundir={{RUNDIR}} --expname={{EXPNAME}} --postprocess={{POSTPROCESS}} --leg=${CYLC_TASK_CYCLE_POINT}
 """
         [[[job]]]
             batch system = slurm
@@ -48,7 +50,7 @@ ece-postprocess --rundir=${RUNDIR} --expname=${EXPNAME} --postprocess=${POSTPROC
     [[archive]]
         retry delays = 48*PT6H
         script = """
-ece-postprocess --rundir=${RUNDIR} --expname=${EXPNAME} --archive=${ARCHIVE} --leg=${CYLC_TASK_NUMBER}
+ece-postprocess --rundir={{RUNDIR}} --expname={{EXPNAME}} --archive={{ARCHIVE}} --leg=${CYLC_TASK_CYCLE_POINT}
 """
         [[[job]]]
             batch system = slurm
@@ -60,6 +62,6 @@ ece-postprocess --rundir=${RUNDIR} --expname=${EXPNAME} --archive=${ARCHIVE} --l
             --partigion=staging
 
 [visualization]
-    initial cycle point = {{ START }}
-    final cycle time   = {{ STOP }}
+    initial cycle point = {{ START_LEG }}
+    final cycle point   = {{ END_LEG }}
     default node attributes = "style=filled", "fillcolor=grey"
