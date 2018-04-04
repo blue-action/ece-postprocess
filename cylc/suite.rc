@@ -1,0 +1,65 @@
+#!Jinja2
+[meta]
+    title = EC-EARTH postprocessing
+    description = """
+Postprocess EC-EARTH output for the Blue Action project"""
+
+# define experiment information
+{% set EXPNAME = "4RXF" %}
+{% set RUNDIR = "4RXF" %}
+{% set POSTPROCESS = "4RXF" %}
+{% set ARCHIVE = "4RXF" %}
+
+[scheduling]
+    cycling mode = integer
+    initial cycle point = 1
+    final cycle point = {{N_DATASETS}}
+    max active cycle points = 5
+    # runahead limit = P5 # (alternative limiting method)
+    [[dependencies]]
+        # all cycles are independent
+        [[[R1]]] # first cycle
+            graph = """
+                postprocess => archive
+            """
+        [[[P1]]] # every following cycle
+            graph = """
+                postprocess => archive
+            """
+
+[runtime]
+    [[root]] # suite defaults
+        [[[job]]]
+            batch system = background
+
+    [[postprocess]]
+        retry delays = 48*PT6H
+        script = """
+ece-postprocess --rundir=${RUNDIR} --expname=${EXPNAME} --postprocess=${POSTPROCESS} --leg=${CYLC_TASK_NUMBER}
+"""
+        [[[job]]]
+            batch system = slurm
+            execution time limit = PT2H
+        [[[directives]]]
+            --ntasks=1
+            --ntasks-per-node=1
+            --job-name=postprocess
+
+    [[archive]]
+        retry delays = 48*PT6H
+        script = """
+ece-postprocess --rundir=${RUNDIR} --expname=${EXPNAME} --archive=${ARCHIVE} --leg=${CYLC_TASK_NUMBER}
+"""
+        [[[job]]]
+            batch system = slurm
+            execution time limit = PT2H
+        [[[directives]]]
+            --ntasks=1
+            --ntasks-per-node=1
+            --job-name=postprocess
+            --partigion=staging
+
+[visualization]
+    initial cycle point = {{ START }}
+    final cycle time   = {{ STOP }}
+    default node attributes = "style=filled", "fillcolor=grey"

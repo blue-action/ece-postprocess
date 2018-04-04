@@ -20,8 +20,7 @@ setup(
     license = "Apache 2.0",
     url = "https://github.com/blue-action/ece-postprocess",
     packages=['ece_postprocess'],
-#    package_data={'pyfrbcatdb': ['mapping.json']},
-#    data_files=[(os.path.join(conf_path('pyfrbcatdb')), ['pyfrbcatdb/dbase.config'])],
+    data_files=[(os.path.join(conf_path('ece_postprocess')), ['cylc/suite.rc'])],
     scripts=['ece_postprocess/scripts/ece-postprocess'],
     long_description=read('README.md'),
     classifiers=[

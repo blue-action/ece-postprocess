@@ -92,54 +92,103 @@ import glob
 ##########################################################################
 
 class postprocess:
-    '''
-    description
-    '''
-    def __init__(self, rundir, outputdir, archive, expname, leg):
+    def __init__(self, rundir, postprocess, archive, expname, leg):
         '''
-        rundir: base run directory
-        output_path: output of postprocess netCDF data
-        archive: archive location of full grib files
-        expname = name of experiment
+        Quantify atmospheric meridional energy transport from EC-earth
+
+        param rundir: base run directory
+        param postprocess: output of postprocess netCDF data
+        param archive: archive location of full grib files
+        param expname: name of experiment
+        param leg: leg number in experiment
+        type rundir: str
+        type postprocess: str, NoneType
+        type archive: str, NoneType
+        type expname: str
+        type leg: int
         '''
-        # calculate the time for the code execution
-        start_time = tttt.time()
+        # check if output data is available
+        ece_info = os.path.join(rundir, expname, 'ece.info')
+        if "leg_number={}".format(leg) in open(ece_info).read():
+            # format leg as str with leading zeros
+            leg = str(leg).zfill(3) 
+            # define the path where the output data of the experiment is saved
+            datapath = os.path.join(rundir, expname, 'output', 'ifs', leg)
+            # check if we need to do postprocessing
+            if postprocess:
+                self.runPostprocess(datapath, expname, postprocess)
+            # check if we need to archive the original files
+            if archive:
+                self.runArchive(archive, expname, datapath)
+        else:
+            raise IOError("Output for leg {} not found".format(leg))
+
+    def runPostprocess(self, datapath, expname, outputdir):
+        '''
+        Run the postprocessing
+
+        param datapath: path where the output data of the experiment is saved
+        param expname: name of experiment
+        param outputdir: output directory of post processed files
+        type datapath: str
+        type expname: str
+        type outputdir: str
+        '''
+        # define full path output directory
         outputdir = os.path.join(outputdir, expname)
         try:
             os.makedirs(outputdir)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-        ####################################################################################
-        ################################   Input zone  #####################################
-        leg = str(leg).zfill(3)  # format leg as str with leading zeros
-        datapath = os.path.join(rundir, expname, 'output', 'ifs', leg)
-        ####################################################################################
         # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
         logging.basicConfig(filename = outputdir + os.sep + 'history.log',
                             filemode = 'w+', level = logging.DEBUG,
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        ####################################################################################
         # convert sp2gpl and copy to tmpdir
         tmpdir = os.path.join(outputdir, 'tmp')
         self.sp2gpl(datapath, expname, outputdir, tmpdir)
-        ####################################################################################
+        # actual postprocessing
         self.postprocess(tmpdir, expname, outputdir)
-        # archiving original files using rsync
+
+    @staticmethod
+    def runArchive(archive, expname, datapath, remove=False):
+        '''
+        Archiving original files using rsync
+
+        param archive: path  of archive location
+        param expname: name of experiment
+        param datapath: path where the output data of the experiment is saved
+        param remove: boolean indicating of original files need to be removed
+                      after successful archiving
+        type archive: str
+        type expname: str
+        type datapath: str
+        type remove: bool
+        '''
+        # create subdir for experiment in archive location
         archive_dir = os.path.join(archive, expname)
         try:
             os.makedirs(archive_dir)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-        subprocess.run(['rsync', '-va', '--recursive', datapath, archive_dir], shell=True, check=True)                 
-        # done archiving
-        # shutil.rmtree(datapath)  # don't automatically remove for now
-        print(("--- %s minutes ---" % ((tttt.time() - start_time)/60)))
-
+        # archive using rsync
+        subprocess.run(['rsync', '-va', '--recursive', datapath, archive_dir], shell=True, check=True)
+        # check if original files need to be removed
+        if remove:
+            # remove original files
+            #shutil.rmtree(datapath)  # don't automatically remove for now
+            pass
 
     @staticmethod
     def setConstants():
+        '''
+        Define constants used in the calculations
+        
+        returns: dictionary with constants for g, R. cp, Lv, R_dry and R_vap
+        rtype: dict
+        '''
         # define the constant:
         constant = {'g' : 9.80616,      # gravititional acceleration [m / s2]
                     'R' : 6371009,      # radius of the earth [m]
@@ -154,8 +203,11 @@ class postprocess:
     def defineSigmaLevels():
         '''
         Definine sigma levels
+
+        returns: tuple containing arrays with A and B values for the definition of
+                 sigma levellist
+        rtype: tuple
         '''
-        # A and B values for the definition of sigma levelist
         # Since there are 60 model levels, there are 61 half levels, so it is for A and B values
         # the unit of A is Pa!!!!!!!!!!!!
         # from surface to TOA
@@ -174,8 +226,6 @@ class postprocess:
                       9405.222656, 8356.25293, 7335.164551, 6353.920898, 5422.802734, 4550.21582,
                       3743.464355, 3010.146973, 2356.202637, 1784.854614, 1297.656128, 895.193542,
                       576.314148, 336.772369, 162.043427, 54.208336, 6.575628, 0.00316, 0.0],dtype=float)
-        # reverse A
-        #A = A[::-1]
         B = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                       0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                       0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
@@ -191,8 +241,6 @@ class postprocess:
                       0.626559, 0.662934, 0.698224, 0.732224, 0.764679, 0.795385,
                       0.824185, 0.85095, 0.875518, 0.897767, 0.917651, 0.935157,
                       0.950274, 0.963007, 0.973466, 0.982238, 0.989153, 0.994204, 0.99763, 1.0],dtype=float)
-        # reverse B
-        #B = B[::-1]
         return (A,B)
 
 
@@ -466,7 +514,16 @@ class postprocess:
     @staticmethod
     def sp2gpl(datapath, expname, outputdir, tmpdir):
         '''
-        convert the spectral field to grid field
+        Convert spectral field to grid field
+
+        param datapath:
+        param expname:
+        param outputdir:
+        param tmpdir:
+        type datapath:
+        type expname:
+        type outputdir:
+        type tmpdir:
         '''
         # create/cleanup tmpdir       
         try:
@@ -488,7 +545,8 @@ class postprocess:
         ICMSH = "ICMSH{}+{}".format(expname, file_time)
         # sp2gpl -> tmpdir
         subprocess.run(['cdo', 'sp2gpl', os.path.join(datapath, ICMSH), os.path.join(tmpdir, ICMSH)])
-        subprocess.run(['rsync', '-va', os.path.join(datapath, ICMSH), os.path.join(tmpdir, ICMSH)], shell=True, check=True) 
+        # rsync the guassian grid output
+        subprocess.run(['rsync', '-va', os.path.join(datapath, ICMGG), os.path.join(tmpdir, ICMGG)], shell=True, check=True) 
 
 
     @staticmethod

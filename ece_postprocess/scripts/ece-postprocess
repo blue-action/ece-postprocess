@@ -65,10 +65,10 @@ def cli_parser():
                help='EC-EARTH leg number')
     parser.add('--rundir', help='run directory [path]', type=is_dir,
                action=FullPaths, env_var='ece_rundir', required=True)
-    parser.add('--outputdir', help='output directory [path]', type=is_dir,
-               action=FullPaths, env_var='ece_outdir', required=True)
+    parser.add('--postprocess', help='output directory [path]', type=is_dir,
+               action=FullPaths, env_var='ece_postdir', required=False)
     parser.add('--archive', help='archive location [path]', type=is_dir,
-               action=FullPaths, env_var='ece_archivedir', required=True)
+               action=FullPaths, env_var='ece_archivedir', required=False)
     parser.add('--expname', help='EC-EARTH experiment name',
                env_var='ece_expname', required=True)
     results = parser.parse_args()
@@ -77,6 +77,6 @@ def cli_parser():
 
 if __name__ == "__main__":
     results = cli_parser()
-    AMET_land_surface.postprocess(results.rundir, results.outputdir,
+    AMET_land_surface.postprocess(results.rundir, results.postprocess,
                                   results.archive, results.expname,
                                   results.leg)
