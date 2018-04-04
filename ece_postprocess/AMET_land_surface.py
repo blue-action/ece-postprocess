@@ -75,6 +75,7 @@ import errno
 import subprocess
 import shutil
 import glob
+import tempfile
 
 ##########################################################################
 ###########################   Units vacabulory   #########################
@@ -146,10 +147,12 @@ class postprocess:
                             filemode = 'w+', level = logging.DEBUG,
                             format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         # convert sp2gpl and copy to tmpdir
-        tmpdir = os.path.join(outputdir, 'tmp')
+        tmpdir = tempfile.mkdtemp(dir=outputdir)
         self.sp2gpl(datapath, expname, outputdir, tmpdir)
         # actual postprocessing
         self.postprocess(tmpdir, expname, outputdir)
+        # remove tmpdir
+        shutil.rmtree(tmpdir)
 
     @staticmethod
     def runArchive(archive, expname, datapath, remove=False):
