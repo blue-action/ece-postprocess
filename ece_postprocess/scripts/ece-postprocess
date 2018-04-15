@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+
+'''
+description:    Postprocess and archive EC-EARTH output for
+                the Blue-Action project
+license:        APACHE 2.0
+author:         Yang Liu, NLeSC (y.liu@esciencecenter.nl)
+                Ronald van Haren, NLeSC (r.vanharen@esciencecenter.nl)
+'''
+
+import configargparse
+import sys
+import os
+from ece_postprocess import AMET_land_surface
+
+
+class FullPaths(configargparse.Action):
+    """Expand user- and relative-paths"""
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest,
+                os.path.abspath(os.path.expanduser(values)))
+
+
+def is_dir(dirname):
+    """
+    Checks if a path is an actual directory
+    :param dirname: path of a directory
+    :type dirname: string
+    :returns: path of a directory
+    :rtype: string
+    """
+    if not os.path.isdir(dirname):
+        msg = "{0} is not a directory".format(dirname)
+        raise configargparse.ArgumentTypeError(msg)
+    else:
+        return dirname
+
+
+def sha256_checksum(filename, block_size=65536):
+    '''
+    Return sha256 checksum of file
+    :param filename: path of a file
+    :type filename: string
+    :returns: sha256 checksum
+    :rtype: string
+    '''
+    sha256 = hashlib.sha256()
+    with open(filename, 'rb') as f:
+        for block in iter(lambda: f.read(block_size), b''):
+            sha256.update(block)
+    return sha256.hexdigest()
+
+
+def cli_parser():
+    '''
+    parse command line arguments:
+    '''
+    cfile = os.path.join(sys.prefix, 'etc', 'ece-postprocess', 'ece-postprocess.config')
+    parser = configargparse.ArgumentParser(
+      default_config_files=[cfile],
+      description='Postprocess and archive EC-EARTH output')
+    parser.add('-c', '--my-config', required=False, is_config_file=True,
+               help='config file path')
+    parser.add('--leg', required=True, type=int,
+               help='EC-EARTH leg number')
+    parser.add('--rundir', help='run directory [path]', type=is_dir,
+               action=FullPaths, env_var='ece_rundir', required=True)
+    parser.add('--postprocess', help='output directory [path]', type=is_dir,
+               action=FullPaths, env_var='ece_postdir', required=False)
+    parser.add('--archive', help='archive location [path]', type=is_dir,
+               action=FullPaths, env_var='ece_archivedir', required=False)
+    parser.add('--expname', help='EC-EARTH experiment name',
+               env_var='ece_expname', required=True)
+    results = parser.parse_args()
+    return results
+
+
+if __name__ == "__main__":
+    results = cli_parser()
+    AMET_land_surface.postprocess(results.rundir, results.postprocess,
+                                  results.archive, results.expname,
+                                  results.leg)
