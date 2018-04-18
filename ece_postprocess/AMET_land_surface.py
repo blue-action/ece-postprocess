@@ -177,7 +177,7 @@ class postprocess:
             if e.errno != errno.EEXIST:
                 raise
         # archive using rsync
-        subprocess.check_call(['rsync', '-va', '--recursive', datapath, archive_dir], shell=True, check=True)
+        subprocess.check_call(['rsync', '-az', '--recursive', datapath, archive_dir])
         # check if original files need to be removed
         if remove:
             # remove original files
@@ -247,8 +247,8 @@ class postprocess:
         return (A,B)
 
 
-        @staticmethod
-        def var_key_retrive(datapath, expname):
+    @staticmethod
+    def var_key_retrieve(datapath, expname):
             # use pygrib to read the grib files
             ##########################################################################
             # Due to the characteristic of GRIB file, it is highly efficient to read #
@@ -283,11 +283,10 @@ class postprocess:
             print("There are {} days in this month ({})".format(days,file_time))
             print("====================================================")
             logging.info("Retrieving variables for {} successfully!".format(file_time))
-            return ICMSHECE, ICMGGECE, num_message_SH, num_message_GG, num_record, days, latitude, longitude
+            return ICMSHECE, ICMGGECE, num_message_SH, num_message_GG, num_record, days, latitude, longitude, file_time
 
 
-        @staticmethod
-        def visualization(E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_path,filename):
+    def visualization(self, E_total,E_internal,E_latent,E_geopotential,E_kinetic,output_path,expname,filename):
             # make plots
             print("Start making plots for the total meridional energy transport and each component.")
             logging.info("Start making plots for the total meridional energy transport and each component.")
@@ -296,24 +295,23 @@ class postprocess:
             E_total_monthly_mean = E_total/1000
             # Plot the total meridional energy transport against the latitude
             fig1 = plt.figure()
-            plt.plot(latitude,E_total_monthly_mean,'b-',label='EC-earth')
+            plt.plot(self.latitude,E_total_monthly_mean,'b-',label='EC-earth')
             plt.axhline(y=0, color='r',ls='--')
             #plt.hold()
-            plt.title('Total Atmospheric Meridional Energy Transport {}'.format(filename))
+            plt.title('Total Atmospheric Meridional Energy Transport {} {}'.format(expname, filename))
             #plt.legend()
             plt.xlabel("Laitude")
             plt.xticks(np.linspace(-90,90,13))
             #plt.yticks(np.linspace(0,6,7))
             plt.ylabel("Meridional Energy Transport (PW)")
             #plt.show()
-            fig1.savefig(output_path + os.sep + 'AMET_EC-earth_total_{}.png'.format(filename), dpi = 300)
+            fig1.savefig(output_path + os.sep + 'AMET_EC-earth_total_{}_{}.png'.format(expname, filename), dpi = 300)
             plt.close(fig1)
 
 
-        @staticmethod
-        def create_netcdf_point (meridional_E_point_pool,meridional_E_internal_point_pool,
-                                 meridional_E_latent_point_pool,meridional_E_geopotential_point_pool,
-                                 meridional_E_kinetic_point_pool,uc_point_pool,vc_point_pool,output_path,filename):
+    def create_netcdf_point (self, meridional_E_point_pool,meridional_E_internal_point_pool,
+                             meridional_E_latent_point_pool,meridional_E_geopotential_point_pool,
+                             meridional_E_kinetic_point_pool,uc_point_pool,vc_point_pool,output_path,expname,filename):
             # save output datasets
             print('*******************************************************************')
             print('*********************** create netcdf file*************************')
@@ -321,10 +319,10 @@ class postprocess:
             logging.info("Start creating netcdf file for total meridional energy transport and each component at each grid point.")
             # wrap the datasets into netcdf file
             # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_E_point.nc'.format(filename),'w',format = 'NETCDF3_64BIT')
+            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_{}_E_point.nc'.format(expname, filename),'w',format = 'NETCDF4')
             # create dimensions for netcdf data
-            lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
-            lon_wrap_dim = data_wrap.createDimension('longitude',Dim_longitude)
+            lat_wrap_dim = data_wrap.createDimension('latitude', self.Dim_latitude)
+            lon_wrap_dim = data_wrap.createDimension('longitude', self.Dim_longitude)
             # create coordinate variables for 3-dimensions
             lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
             lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
@@ -332,11 +330,11 @@ class postprocess:
             uc_wrap_var = data_wrap.createVariable('uc',np.float32,('latitude','longitude'))
             vc_wrap_var = data_wrap.createVariable('vc',np.float32,('latitude','longitude'))
 
-            E_total_wrap_var = data_wrap.createVariable('E',np.float64,('latitude','longitude'))
-            E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('latitude','longitude'))
-            E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('latitude','longitude'))
-            E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('latitude','longitude'))
-            E_kinetic_wrap_var = data_wrap.createVariable('E_uv2',np.float64,('latitude','longitude'))
+            E_total_wrap_var = data_wrap.createVariable('E',np.float64,('latitude','longitude'), zlib=True)
+            E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('latitude','longitude'), zlib=True)
+            E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('latitude','longitude'), zlib=True)
+            E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('latitude','longitude'), zlib=True)
+            E_kinetic_wrap_var = data_wrap.createVariable('E_uv2',np.float64,('latitude','longitude'), zlib=True)
             # global attributes
             data_wrap.description = 'Monthly mean meridional energy transport and each component at each grid point'
             # variable attributes
@@ -358,8 +356,8 @@ class postprocess:
             E_geopotential_wrap_var.long_name = 'atmospheric meridional geopotential transport'
             E_kinetic_wrap_var.long_name = 'atmospheric meridional kinetic energy transport'
             # writing data
-            lat_wrap_var[:] = latitude
-            lon_wrap_var[:] = longitude
+            lat_wrap_var[:] = self.latitude
+            lon_wrap_var[:] = self.longitude
             uc_wrap_var[:] = uc_point_pool
             vc_wrap_var[:] = vc_point_pool
             E_total_wrap_var[:] = meridional_E_point_pool
@@ -372,26 +370,26 @@ class postprocess:
             print("Create netcdf file successfully")
             logging.info("The generation of netcdf files for the total meridional energy transport and each component on each grid point is complete!!")
 
-        # save output datasets
-        def create_netcdf_zonal_int (meridional_E_pool, meridional_E_internal_pool, meridional_E_latent_pool,
-                                     meridional_E_geopotential_pool, meridional_E_kinetic_pool, output_path, filename):
+    # save output datasets
+    def create_netcdf_zonal_int (self, meridional_E_pool, meridional_E_internal_pool, meridional_E_latent_pool,
+                                 meridional_E_geopotential_pool, meridional_E_kinetic_pool, output_path,expname, filename):
             print('*******************************************************************')
             print('*********************** create netcdf file*************************')
             print('*******************************************************************')
             logging.info("Start creating netcdf files for the zonal integral of total meridional energy transport and each component.")
             # wrap the datasets into netcdf file
             # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_E_zonal_int.nc'.format(filename),'w',format = 'NETCDF3_64BIT')
+            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_{}_E_zonal_int.nc'.format(expname, filename),'w',format = 'NETCDF4')
             # create dimensions for netcdf data
-            lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
+            lat_wrap_dim = data_wrap.createDimension('latitude', self.Dim_latitude)
             # create coordinate variables for 3-dimensions
             lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
             # create the actual 3-d variable
-            E_total_wrap_var = data_wrap.createVariable('E',np.float64,('latitude',))
-            E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('latitude',))
-            E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('latitude',))
-            E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('latitude',))
-            E_kinetic_wrap_var = data_wrap.createVariable('E_uv2',np.float64,('latitude',))
+            E_total_wrap_var = data_wrap.createVariable('E',np.float64,('latitude',), zlib=True)
+            E_internal_wrap_var = data_wrap.createVariable('E_cpT',np.float64,('latitude',), zlib=True)
+            E_latent_wrap_var = data_wrap.createVariable('E_Lvq',np.float64,('latitude',), zlib=True)
+            E_geopotential_wrap_var = data_wrap.createVariable('E_gz',np.float64,('latitude',), zlib=True)
+            E_kinetic_wrap_var = data_wrap.createVariable('E_uv2',np.float64,('latitude',), zlib=True)
             # global attributes
             data_wrap.description = 'Monthly mean zonal integral of meridional energy transport and each component'
             # variable attributes
@@ -407,7 +405,7 @@ class postprocess:
             E_geopotential_wrap_var.long_name = 'atmospheric meridional geopotential transport'
             E_kinetic_wrap_var.long_name = 'atmospheric meridional kinetic energy transport'
             # writing data
-            lat_wrap_var[:] = latitude
+            lat_wrap_var[:] = self.latitude
             E_total_wrap_var[:] = meridional_E_pool
             E_internal_wrap_var[:] = meridional_E_internal_pool
             E_latent_wrap_var[:] = meridional_E_latent_pool
@@ -418,64 +416,64 @@ class postprocess:
             print("Create netcdf file successfully")
             logging.info("The generation of netcdf files for the zonal integral of total meridional energy transport and each component is complete!!")
 
-        # save output datasets
-        def create_netcdf_surface_land(pool_surface_runoff, pool_subsurface_runoff, pool_snow_albedo,
-                                       pool_snow_density, pool_snow_depth, pool_soil_water_layer_1,
-                                       pool_soil_water_layer_2, pool_soil_water_layer_3, pool_soil_water_layer_4,
-                                       pool_soil_temp_level_1, pool_soil_temp_level_2, pool_soil_temp_level_3,
-                                       pool_soil_temp_level_4, output_path, filename):
+    # save output datasets
+    def create_netcdf_surface_land(self, pool_surface_runoff, pool_subsurface_runoff, pool_snow_albedo,
+                                   pool_snow_density, pool_snow_depth, pool_soil_water_layer_1,
+                                   pool_soil_water_layer_2, pool_soil_water_layer_3, pool_soil_water_layer_4,
+                                   pool_soil_temp_level_1, pool_soil_temp_level_2, pool_soil_temp_level_3,
+                                   pool_soil_temp_level_4, output_path, expname,filename):
             print('*******************************************************************')
             print('*********************** create netcdf file*************************')
             print('*******************************************************************')
             logging.info("Start creating netcdf files for land and surface parameters.")
             # create the time dimension
-            hours = np.arange(3,(num_record+1) * 3,3,dtype=int)
+            hours = np.arange(3,(self.num_record+1) * 3,3,dtype=int)
             # wrap the datasets into netcdf file
             # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_land_surface.nc'.format(filename),'w',format = 'NETCDF3_64BIT')
+            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_{}_land_surface.nc'.format(expname, filename),'w',format = 'NETCDF4')
             # create dimensions for netcdf data
-            lat_wrap_dim = data_wrap.createDimension('latitude',Dim_latitude)
-            lon_wrap_dim = data_wrap.createDimension('longitude',Dim_longitude)
-            time_wrap_dim = data_wrap.createDimension('time',num_record)
+            lat_wrap_dim = data_wrap.createDimension('latitude', self.Dim_latitude)
+            lon_wrap_dim = data_wrap.createDimension('longitude', self.Dim_longitude)
+            time_wrap_dim = data_wrap.createDimension('time', self.num_record)
             # create coordinate variables for 3-dimensions
             lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
             lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
-            time_wrap_var = data_wrap.createVariable('time',np.int32,('time',))
+            time_wrap_var = data_wrap.createVariable('time',np.int32,('time',), zlib=True)
             # create the actual 3-d variable
             # the abbreviation is coherent with the use from ECMWF
-            surface_runoff_wrap_var = data_wrap.createVariable('sro',np.float64,('time','latitude','longitude'))
-            subsurface_runoff_wrap_var = data_wrap.createVariable('ssro',np.float64,('time','latitude','longitude'))
-            snow_albedo_wrap_var = data_wrap.createVariable('asn',np.float64,('time','latitude','longitude'))
-            snow_density_wrap_var = data_wrap.createVariable('rsn',np.float64,('time','latitude','longitude'))
-            snow_depth_wrap_var = data_wrap.createVariable('sde',np.float64,('time','latitude','longitude'))
-            soil_water_layer_1_wrap_var = data_wrap.createVariable('vsw1',np.float64,('time','latitude','longitude'))
-            soil_water_layer_2_wrap_var = data_wrap.createVariable('vsw2',np.float64,('time','latitude','longitude'))
-            soil_water_layer_3_wrap_var = data_wrap.createVariable('vsw3',np.float64,('time','latitude','longitude'))
-            soil_water_layer_4_wrap_var = data_wrap.createVariable('vsw4',np.float64,('time','latitude','longitude'))
-            soil_temp_level_1_wrap_var = data_wrap.createVariable('sot1',np.float64,('time','latitude','longitude'))
-            soil_temp_level_2_wrap_var = data_wrap.createVariable('sot2',np.float64,('time','latitude','longitude'))
-            soil_temp_level_3_wrap_var = data_wrap.createVariable('sot3',np.float64,('time','latitude','longitude'))
-            soil_temp_level_4_wrap_var = data_wrap.createVariable('sot4',np.float64,('time','latitude','longitude'))
+            surface_runoff_wrap_var = data_wrap.createVariable('sro',np.float64,('time','latitude','longitude'), zlib=True)
+            subsurface_runoff_wrap_var = data_wrap.createVariable('ssro',np.float64,('time','latitude','longitude'), zlib=True)
+            snow_albedo_wrap_var = data_wrap.createVariable('asn',np.float64,('time','latitude','longitude'), zlib=True)
+            snow_density_wrap_var = data_wrap.createVariable('rsn',np.float64,('time','latitude','longitude'), zlib=True)
+            snow_depth_wrap_var = data_wrap.createVariable('sde',np.float64,('time','latitude','longitude'), zlib=True)
+            soil_water_layer_1_wrap_var = data_wrap.createVariable('vsw1',np.float64,('time','latitude','longitude'), zlib=True)
+            soil_water_layer_2_wrap_var = data_wrap.createVariable('vsw2',np.float64,('time','latitude','longitude'), zlib=True)
+            soil_water_layer_3_wrap_var = data_wrap.createVariable('vsw3',np.float64,('time','latitude','longitude'), zlib=True)
+            soil_water_layer_4_wrap_var = data_wrap.createVariable('vsw4',np.float64,('time','latitude','longitude'), zlib=True)
+            soil_temp_level_1_wrap_var = data_wrap.createVariable('sot1',np.float64,('time','latitude','longitude'), zlib=True)
+            soil_temp_level_2_wrap_var = data_wrap.createVariable('sot2',np.float64,('time','latitude','longitude'), zlib=True)
+            soil_temp_level_3_wrap_var = data_wrap.createVariable('sot3',np.float64,('time','latitude','longitude'), zlib=True)
+            soil_temp_level_4_wrap_var = data_wrap.createVariable('sot4',np.float64,('time','latitude','longitude'), zlib=True)
             # global attributes
             data_wrap.description = 'Subdaily surface and land parameters from EC-Earth AMIP run'
             # variable attributes
             lat_wrap_var.units = 'degree_north'
             lon_wrap_var.units = 'degree_east'
-            time_wrap_var.units = 'hours since {}01 00:00:00'.format(filename)
+            time_wrap_var.units = 'hours since {}-{}-01 00:00:00'.format(filename[0:4], filename[4:6])
 
-            surface_runoff_var.units = 'm'
-            subsurface_runoff_var.units = 'm'
-            snow_albedo_var.units = '0 - 1'
-            snow_density_var.units = 'kg/m3'
-            snow_depth_var.units = 'm'
-            soil_water_layer_1_var.units = 'm3/m3'
-            soil_water_layer_2_var.units = 'm3/m3'
-            soil_water_layer_3_var.units = 'm3/m3'
-            soil_water_layer_4_var.units = 'm3/m3'
-            soil_temp_level_1_var.units = 'K'
-            soil_temp_level_2_var.units = 'K'
-            soil_temp_level_3_var.units = 'K'
-            soil_temp_level_4_var.units = 'K'
+            surface_runoff_wrap_var.units = 'm'
+            subsurface_runoff_wrap_var.units = 'm'
+            snow_albedo_wrap_var.units = '0 - 1'
+            snow_density_wrap_var.units = 'kg/m3'
+            snow_depth_wrap_var.units = 'm'
+            soil_water_layer_1_wrap_var.units = 'm3/m3'
+            soil_water_layer_2_wrap_var.units = 'm3/m3'
+            soil_water_layer_3_wrap_var.units = 'm3/m3'
+            soil_water_layer_4_wrap_var.units = 'm3/m3'
+            soil_temp_level_1_wrap_var.units = 'K'
+            soil_temp_level_2_wrap_var.units = 'K'
+            soil_temp_level_3_wrap_var.units = 'K'
+            soil_temp_level_4_wrap_var.units = 'K'
 
             surface_runoff_wrap_var.long_name = 'surface runoff'
             subsurface_runoff_wrap_var.long_name = 'sub-surface runoff'
@@ -491,8 +489,8 @@ class postprocess:
             soil_temp_level_3_wrap_var.long_name = 'soil temperature level 3'
             soil_temp_level_4_wrap_var.long_name = 'soil temperature level 4'
             # writing data
-            lat_wrap_var[:] = latitude
-            lon_wrap_var[:] = longitude
+            lat_wrap_var[:] = self.latitude
+            lon_wrap_var[:] = self.longitude
             time_wrap_var[:] = hours
 
             surface_runoff_wrap_var[:] = pool_surface_runoff
@@ -540,27 +538,26 @@ class postprocess:
                 raise
         # get filenames to convert
         filenames = [os.path.basename(f) for f in glob.glob(os.path.join(datapath, 'ICMGG*'))]
-        file_time = [a for a in [a.strip('ICMGG' + expname + '+') for a in filenames] if int(a)][0]
+        file_time = [a for a in [a.lstrip('ICMGG{}+'.format(expname)) for a in filenames] if int(a)][0]
         print("Start retrieving datasets ICMSHECE and ICMGGECE for the time {}".format(file_time))
         logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time {}".format(file_time))
         # define filenames
         ICMGG = "ICMGG{}+{}".format(expname, file_time)
         ICMSH = "ICMSH{}+{}".format(expname, file_time)
+        # rsync the guassian grid output
+        subprocess.check_call(['rsync', '-az', os.path.join(datapath, ICMGG), os.path.join(tmpdir, ICMGG)])
         # sp2gpl -> tmpdir
         subprocess.check_call(['cdo', 'sp2gpl', os.path.join(datapath, ICMSH), os.path.join(tmpdir, ICMSH)])
-        # rsync the guassian grid output
-        subprocess.check_call(['rsync', '-va', os.path.join(datapath, ICMGG), os.path.join(tmpdir, ICMGG)], shell=True, check=True) 
 
 
-    @staticmethod
-    def postprocess(tmpdir, expname, output_path):
+    def postprocess(self, tmpdir, expname, output_path):
         # set constants and sigma levels
         constant = self.setConstants()
         (A,B) = self.defineSigmaLevels()
         ####################################################################
         ######  use pygrib.open to get the key from ec-earth outputs  ######
         ####################################################################
-        ICMSHECE, ICMGGECE, num_message_SH, num_message_GG, num_record, days, latitude, longitude = var_key_retrive(datapath, expname)
+        ICMSHECE, ICMGGECE, num_message_SH, num_message_GG, num_record, days, latitude, longitude, file_time = self.var_key_retrieve(tmpdir, expname)
         ####################################################################
         ######       Extract invariant and calculate constants       #######
         ####################################################################
@@ -987,20 +984,25 @@ class postprocess:
         meridional_E_kinetic_point_pool = meridional_E_kinetic_point
         ####################################################################
         # make plots for monthly means
-        visualization(meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,
-                      meridional_E_geopotential_pool,meridional_E_kinetic_pool,output_path,file_name)
+        self.latitude = latitude
+        self.Dim_latitude = Dim_latitude
+        self.longitude = longitude
+        self.Dim_longitude = Dim_longitude
+        self.num_record = num_record
+        self.visualization(meridional_E_pool,meridional_E_internal_pool,meridional_E_latent_pool,
+                           meridional_E_geopotential_pool,meridional_E_kinetic_pool,output_path,expname,file_time)
         # save data as netcdf file
-        create_netcdf_zonal_int(meridional_E_pool,meridional_E_internal_pool,
-                                meridional_E_latent_pool,meridional_E_geopotential_pool,
-                                meridional_E_kinetic_pool,output_path,file_name)
-        create_netcdf_point(meridional_E_point_pool,meridional_E_internal_point_pool,
-                            meridional_E_latent_point_pool,meridional_E_geopotential_point_pool,
-                            meridional_E_kinetic_point_pool,uc_point_pool,vc_point_pool,output_path,file_name)
-        create_netcdf_surface_land(pool_surface_runoff, pool_subsurface_runoff, pool_snow_albedo,
-                                   pool_snow_density, pool_snow_depth, pool_soil_water_layer_1,
-                                   pool_soil_water_layer_2, pool_soil_water_layer_3, pool_soil_water_layer_4,
-                                   pool_soil_temp_level_1, pool_soil_temp_level_2, pool_soil_temp_level_3,
-                                   pool_soil_temp_level_4, output_path, file_name)
+        self.create_netcdf_zonal_int(meridional_E_pool,meridional_E_internal_pool,
+                                     meridional_E_latent_pool,meridional_E_geopotential_pool,
+                                     meridional_E_kinetic_pool,output_path,expname,file_time)
+        self.create_netcdf_point(meridional_E_point_pool,meridional_E_internal_point_pool,
+                                 meridional_E_latent_point_pool,meridional_E_geopotential_point_pool,
+                                 meridional_E_kinetic_point_pool,uc_point_pool,vc_point_pool,output_path,expname,file_time)
+        self.create_netcdf_surface_land(pool_surface_runoff, pool_subsurface_runoff, pool_snow_albedo,
+                                        pool_snow_density, pool_snow_depth, pool_soil_water_layer_1,
+                                        pool_soil_water_layer_2, pool_soil_water_layer_3, pool_soil_water_layer_4,
+                                        pool_soil_temp_level_1, pool_soil_temp_level_2, pool_soil_temp_level_3,
+                                        pool_soil_temp_level_4, output_path, expname, file_time)
         print('Computation of meridional energy transport on model level for ERA-Interim is complete!!!')
         print('The output is in sleep, safe and sound!!!')
         logging.info("The full pipeline of the quantification of meridional energy transport in the atmosphere is accomplished!")
