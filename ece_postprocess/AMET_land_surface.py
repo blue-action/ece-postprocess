@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport from EC-earth (Cartesius)
 Author          : Yang Liu
 Date            : 2017.12.07
-Last Update     : 2018.03.14
+Last Update     : 2018.04.30
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on the output from EC-Earth simulation.
                   The complete procedure includes the calculation of the mass budget
@@ -18,8 +18,8 @@ variables       : Absolute Temperature              T         [K]
                   Surface pressure                  sp        [Pa]
                   Zonal Divergent Wind              u         [m/s]
                   Meridional Divergent Wind         v         [m/s]
-		          Geopotential 	                    gz        [m2/s2]
-Caveat!!	    : The dataset is for the entire globe from -90N - 90N.
+		  Geopotential 	                    gz        [m2/s2]
+Caveat!!	: The dataset is for the entire globe from -90N - 90N.
                   The model uses TL511 spectral resolution with N256 Gaussian Grid.
                   For postprocessing, the spectral fields will be converted to grid.
                   The spatial resolution of Gaussian grid is 512 (lat) x 1024 (lon)
