@@ -11,21 +11,6 @@ Description     : The code aims to calculate the atmospheric meridional energy
                   correction and the computation of vertical integral of zonally
                   integrated meridional energy transport.
 
-                  Besides, the following surface parameters land parameters are saved (3 hourly) (About 2Gbytes):
-                  Surface runoff                        [m]
-                  Sub-surface runoff                    [m]
-                  Snow albedo                           [0-1]
-                  Snow density                          [kg/m3]
-                  Volumetric soil water layer 1         [m3/m3]
-                  Volumetric soil water layer 2         [m3/m3]
-                  Volumetric soil water layer 3         [m3/m3]
-                  Volumetric soil water layer 4         [m3/m3]
-                  Soil temperature level 1              [K]
-                  Snow depth                            [m]
-                  Soil temperature level 2              [K]
-                  Soil temperature level 3              [K]
-                  Soil temperature level 4              [K]
-
 Return Value    : GRIB1 data file
 Dependencies    : os, time, numpy, netCDF4, sys, matplotlib, pygrib
 variables       : Absolute Temperature              T         [K]
@@ -416,102 +401,6 @@ class postprocess:
             print("Create netcdf file successfully")
             logging.info("The generation of netcdf files for the zonal integral of total meridional energy transport and each component is complete!!")
 
-    # save output datasets
-    def create_netcdf_surface_land(self, pool_surface_runoff, pool_subsurface_runoff, pool_snow_albedo,
-                                   pool_snow_density, pool_snow_depth, pool_soil_water_layer_1,
-                                   pool_soil_water_layer_2, pool_soil_water_layer_3, pool_soil_water_layer_4,
-                                   pool_soil_temp_level_1, pool_soil_temp_level_2, pool_soil_temp_level_3,
-                                   pool_soil_temp_level_4, output_path, expname,filename):
-            print('*******************************************************************')
-            print('*********************** create netcdf file*************************')
-            print('*******************************************************************')
-            logging.info("Start creating netcdf files for land and surface parameters.")
-            # create the time dimension
-            hours = np.arange(3,(self.num_record+1) * 3,3,dtype=int)
-            # wrap the datasets into netcdf file
-            # 'NETCDF3_CLASSIC', 'NETCDF3_64BIT', 'NETCDF4_CLASSIC', and 'NETCDF4'
-            data_wrap = Dataset(output_path + os.sep + 'AMET_EC-earth_model_daily_{}_{}_land_surface.nc'.format(expname, filename),'w',format = 'NETCDF4')
-            # create dimensions for netcdf data
-            lat_wrap_dim = data_wrap.createDimension('latitude', self.Dim_latitude)
-            lon_wrap_dim = data_wrap.createDimension('longitude', self.Dim_longitude)
-            time_wrap_dim = data_wrap.createDimension('time', self.num_record)
-            # create coordinate variables for 3-dimensions
-            lat_wrap_var = data_wrap.createVariable('latitude',np.float32,('latitude',))
-            lon_wrap_var = data_wrap.createVariable('longitude',np.float32,('longitude',))
-            time_wrap_var = data_wrap.createVariable('time',np.int32,('time',), zlib=True)
-            # create the actual 3-d variable
-            # the abbreviation is coherent with the use from ECMWF
-            surface_runoff_wrap_var = data_wrap.createVariable('sro',np.float64,('time','latitude','longitude'), zlib=True)
-            subsurface_runoff_wrap_var = data_wrap.createVariable('ssro',np.float64,('time','latitude','longitude'), zlib=True)
-            snow_albedo_wrap_var = data_wrap.createVariable('asn',np.float64,('time','latitude','longitude'), zlib=True)
-            snow_density_wrap_var = data_wrap.createVariable('rsn',np.float64,('time','latitude','longitude'), zlib=True)
-            snow_depth_wrap_var = data_wrap.createVariable('sde',np.float64,('time','latitude','longitude'), zlib=True)
-            soil_water_layer_1_wrap_var = data_wrap.createVariable('vsw1',np.float64,('time','latitude','longitude'), zlib=True)
-            soil_water_layer_2_wrap_var = data_wrap.createVariable('vsw2',np.float64,('time','latitude','longitude'), zlib=True)
-            soil_water_layer_3_wrap_var = data_wrap.createVariable('vsw3',np.float64,('time','latitude','longitude'), zlib=True)
-            soil_water_layer_4_wrap_var = data_wrap.createVariable('vsw4',np.float64,('time','latitude','longitude'), zlib=True)
-            soil_temp_level_1_wrap_var = data_wrap.createVariable('sot1',np.float64,('time','latitude','longitude'), zlib=True)
-            soil_temp_level_2_wrap_var = data_wrap.createVariable('sot2',np.float64,('time','latitude','longitude'), zlib=True)
-            soil_temp_level_3_wrap_var = data_wrap.createVariable('sot3',np.float64,('time','latitude','longitude'), zlib=True)
-            soil_temp_level_4_wrap_var = data_wrap.createVariable('sot4',np.float64,('time','latitude','longitude'), zlib=True)
-            # global attributes
-            data_wrap.description = 'Subdaily surface and land parameters from EC-Earth AMIP run'
-            # variable attributes
-            lat_wrap_var.units = 'degree_north'
-            lon_wrap_var.units = 'degree_east'
-            time_wrap_var.units = 'hours since {}-{}-01 00:00:00'.format(filename[0:4], filename[4:6])
-
-            surface_runoff_wrap_var.units = 'm'
-            subsurface_runoff_wrap_var.units = 'm'
-            snow_albedo_wrap_var.units = '0 - 1'
-            snow_density_wrap_var.units = 'kg/m3'
-            snow_depth_wrap_var.units = 'm'
-            soil_water_layer_1_wrap_var.units = 'm3/m3'
-            soil_water_layer_2_wrap_var.units = 'm3/m3'
-            soil_water_layer_3_wrap_var.units = 'm3/m3'
-            soil_water_layer_4_wrap_var.units = 'm3/m3'
-            soil_temp_level_1_wrap_var.units = 'K'
-            soil_temp_level_2_wrap_var.units = 'K'
-            soil_temp_level_3_wrap_var.units = 'K'
-            soil_temp_level_4_wrap_var.units = 'K'
-
-            surface_runoff_wrap_var.long_name = 'surface runoff'
-            subsurface_runoff_wrap_var.long_name = 'sub-surface runoff'
-            snow_albedo_wrap_var.long_name = 'snow albedo'
-            snow_density_wrap_var.long_name = 'snow density'
-            snow_depth_wrap_var.long_name = 'snow depth'
-            soil_water_layer_1_wrap_var.long_name = 'volumetric soil water layer 1'
-            soil_water_layer_2_wrap_var.long_name = 'volumetric soil water layer 2'
-            soil_water_layer_3_wrap_var.long_name = 'volumetric soil water layer 3'
-            soil_water_layer_4_wrap_var.long_name = 'volumetric soil water layer 4'
-            soil_temp_level_1_wrap_var.long_name = 'soil temperature level 1'
-            soil_temp_level_2_wrap_var.long_name = 'soil temperature level 2'
-            soil_temp_level_3_wrap_var.long_name = 'soil temperature level 3'
-            soil_temp_level_4_wrap_var.long_name = 'soil temperature level 4'
-            # writing data
-            lat_wrap_var[:] = self.latitude
-            lon_wrap_var[:] = self.longitude
-            time_wrap_var[:] = hours
-
-            surface_runoff_wrap_var[:] = pool_surface_runoff
-            subsurface_runoff_wrap_var[:] = pool_subsurface_runoff
-            snow_albedo_wrap_var[:] = pool_snow_albedo
-            snow_density_wrap_var[:] = pool_snow_density
-            snow_depth_wrap_var[:] = pool_snow_depth
-            soil_water_layer_1_wrap_var[:] = pool_soil_water_layer_1
-            soil_water_layer_2_wrap_var[:] = pool_soil_water_layer_2
-            soil_water_layer_3_wrap_var[:] = pool_soil_water_layer_3
-            soil_water_layer_4_wrap_var[:] = pool_soil_water_layer_4
-            soil_temp_level_1_wrap_var[:] = pool_soil_temp_level_1
-            soil_temp_level_2_wrap_var[:] = pool_soil_temp_level_2
-            soil_temp_level_3_wrap_var[:] = pool_soil_temp_level_3
-            soil_temp_level_4_wrap_var[:] = pool_soil_temp_level_4
-
-            # close the file
-            data_wrap.close()
-            print("Create netcdf file successfully")
-            logging.info("The generation of netcdf files for the land and surface parameters are complete!!")
-
     @staticmethod
     def sp2gpl(datapath, expname, outputdir, tmpdir):
         '''
@@ -625,29 +514,12 @@ class postprocess:
         pool_vapor_flux_int = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
         pool_geo_flux_int = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
         pool_velocity_flux_int = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        ####################################################################
-        ####    Create space for stroing surface and land parameters    ####
-        ####################################################################
-        # data pool for mass budget correction module
-        pool_surface_runoff = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_subsurface_runoff = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_snow_albedo = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_snow_density = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_snow_depth = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_soil_water_layer_1 = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_soil_water_layer_2 = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_soil_water_layer_3 = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_soil_water_layer_4 = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_soil_temp_level_1 = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_soil_temp_level_2 = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_soil_temp_level_3 = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
-        pool_soil_temp_level_4 = np.zeros((num_record,Dim_latitude,Dim_longitude),dtype=float)
         ###############################################################################
         ###  extract variables and calculate the vertical integrated zonal integral ###
         ###############################################################################
         # create a message iterator
         index_SH = 2
-        index_GG = 1 # the first message is already read
+        index_GG = 35 # the first message is already read
         for i in np.arange(num_record):
             ################################################################
             ######       Get all the variables - spectral field      #######
@@ -680,59 +552,6 @@ class postprocess:
             ############################################################
             ######       Get all the fields - Gaussian grid      #######
             ############################################################
-            # surface and land variables
-            key_surface_runoff = ICMGGECE.message(index_GG) # 1
-            pool_surface_runoff[i,:,:] = key_surface_runoff.values
-            index_GG = index_GG + 1
-
-            key_subsurface_runoff = ICMGGECE.message(index_GG) # 2
-            pool_subsurface_runoff[i,:,:] = key_subsurface_runoff.values
-            index_GG = index_GG + 1
-
-            key_snow_albedo = ICMGGECE.message(index_GG) # 3
-            pool_snow_albedo[i,:,:] = key_snow_albedo.values
-            index_GG = index_GG + 1
-
-            key_snow_density = ICMGGECE.message(index_GG) # 4
-            pool_snow_density[i,:,:] = key_snow_density.values
-            index_GG = index_GG + 1
-
-            key_soil_water_layer_1 = ICMGGECE.message(index_GG) # 5
-            pool_soil_water_layer_1[i,:,:] = key_soil_water_layer_1.values
-            index_GG = index_GG + 1
-
-            key_soil_water_layer_2 = ICMGGECE.message(index_GG) # 6
-            pool_soil_water_layer_2[i,:,:] = key_soil_water_layer_2.values
-            index_GG = index_GG + 1
-
-            key_soil_water_layer_3 = ICMGGECE.message(index_GG) # 7
-            pool_soil_water_layer_3[i,:,:] = key_soil_water_layer_3.values
-            index_GG = index_GG + 1
-
-            key_soil_water_layer_4 = ICMGGECE.message(index_GG) # 8
-            pool_soil_water_layer_4[i,:,:] = key_soil_water_layer_4.values
-            index_GG = index_GG + 1
-
-            key_soil_temp_level_1 = ICMGGECE.message(index_GG) # 9
-            pool_soil_temp_level_1[i,:,:] = key_soil_temp_level_1.values
-            index_GG = index_GG + 1
-
-            key_snow_depth = ICMGGECE.message(index_GG) # 10
-            pool_snow_depth[i,:,:] = key_snow_depth.values
-            index_GG = index_GG + 5
-
-            key_soil_temp_level_2 = ICMGGECE.message(index_GG) # 15
-            pool_soil_temp_level_2[i,:,:] = key_soil_temp_level_2.values
-            index_GG = index_GG + 9
-
-            key_soil_temp_level_3 = ICMGGECE.message(index_GG) # 24
-            pool_soil_temp_level_3[i,:,:] = key_soil_temp_level_3.values
-            index_GG = index_GG + 9
-
-            key_soil_temp_level_4 = ICMGGECE.message(index_GG) # 33
-            pool_soil_temp_level_4[i,:,:] = key_soil_temp_level_4.values
-            index_GG = index_GG + 2
-
             # for the computation of AMET
             while (index_GG <= (125+i*num_GG_per)):
                 key_q = ICMGGECE.message(index_GG)
@@ -741,7 +560,7 @@ class postprocess:
             key_sp = ICMGGECE.message(index_GG) # 126
             sp = key_sp.values
             # jump the other variables that are not relevant
-            index_GG = index_GG + 11
+            index_GG = index_GG + 45
             print("Retrieving datasets on the Gaussian grid successfully for the {} record!".format(i+1))
             logging.info("Retrieving variables on the Gaussian grid for the {} record successfully!".format(i+1))
             ############################################################
@@ -1000,11 +819,6 @@ class postprocess:
         self.create_netcdf_point(meridional_E_point_pool,meridional_E_internal_point_pool,
                                  meridional_E_latent_point_pool,meridional_E_geopotential_point_pool,
                                  meridional_E_kinetic_point_pool,uc_point_pool,vc_point_pool,output_path,expname,file_time)
-        self.create_netcdf_surface_land(pool_surface_runoff, pool_subsurface_runoff, pool_snow_albedo,
-                                        pool_snow_density, pool_snow_depth, pool_soil_water_layer_1,
-                                        pool_soil_water_layer_2, pool_soil_water_layer_3, pool_soil_water_layer_4,
-                                        pool_soil_temp_level_1, pool_soil_temp_level_2, pool_soil_temp_level_3,
-                                        pool_soil_temp_level_4, output_path, expname, file_time)
         print('Computation of meridional energy transport on model level for ERA-Interim is complete!!!')
         print('The output is in sleep, safe and sound!!!')
         logging.info("The full pipeline of the quantification of meridional energy transport in the atmosphere is accomplished!")
