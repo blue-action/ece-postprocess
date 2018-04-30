@@ -4,7 +4,7 @@ Copyright Netherlands eScience Center
 Function        : Quantify atmospheric meridional energy transport from EC-earth (Cartesius)
 Author          : Yang Liu
 Date            : 2017.12.07
-Last Update     : 2018.03.14
+Last Update     : 2018.04.30
 Description     : The code aims to calculate the atmospheric meridional energy
                   transport based on the output from EC-Earth simulation.
                   The complete procedure includes the calculation of the mass budget
@@ -252,9 +252,9 @@ class postprocess:
             num_message_SH = ICMSHECE.messages
             num_message_GG = ICMGGECE.messages
             # number of days in this month
-            days = (num_message_GG/136+1)/8 # no 00:00:00 at each year
+            days = (num_message_GG/141+1)/8 # no 00:00:00 at each year
             # number of records
-            num_record = num_message_GG/136
+            num_record = num_message_GG/141
             # get the first message
             first_message = ICMGGECE.message(1)
             # extract the latitudes and longitudes
@@ -456,7 +456,7 @@ class postprocess:
         Dim_longitude = 1024
         # number of messages for one record
         num_SH_per = 457
-        num_GG_per = 136
+        num_GG_per = 141
         # calculate zonal & meridional grid size on earth
         # the earth is taken as a perfect sphere, instead of a ellopsoid
         dx = 2 * np.pi * constant['R'] * np.cos(2 * np.pi * latitude / 360) / len(longitude)
@@ -519,7 +519,7 @@ class postprocess:
         ###############################################################################
         # create a message iterator
         index_SH = 2
-        index_GG = 35 # the first message is already read
+        index_GG = 38 # the first message is already read
         for i in np.arange(num_record):
             ################################################################
             ######       Get all the variables - spectral field      #######
@@ -553,14 +553,15 @@ class postprocess:
             ######       Get all the fields - Gaussian grid      #######
             ############################################################
             # for the computation of AMET
-            while (index_GG <= (125+i*num_GG_per)):
+            while (index_GG <= (128+i*num_GG_per)):
                 key_q = ICMGGECE.message(index_GG)
-                q[index_GG-35-i*num_GG_per,:,:] = key_q.values
+                q[index_GG-38-i*num_GG_per,:,:] = key_q.values
                 index_GG = index_GG + 1
-            key_sp = ICMGGECE.message(index_GG) # 126
+	    index_GG = index_GG + 2
+            key_sp = ICMGGECE.message(index_GG) # 131
             sp = key_sp.values
             # jump the other variables that are not relevant
-            index_GG = index_GG + 45
+            index_GG = index_GG + 48
             print("Retrieving datasets on the Gaussian grid successfully for the {} record!".format(i+1))
             logging.info("Retrieving variables on the Gaussian grid for the {} record successfully!".format(i+1))
             ############################################################
