@@ -293,7 +293,6 @@ class postprocess:
             fig1.savefig(output_path + os.sep + 'AMET_EC-earth_total_{}_{}.png'.format(expname, filename), dpi = 300)
             plt.close(fig1)
 
-
     def create_netcdf_point (self, meridional_E_point_pool,meridional_E_internal_point_pool,
                              meridional_E_latent_point_pool,meridional_E_geopotential_point_pool,
                              meridional_E_kinetic_point_pool,uc_point_pool,vc_point_pool,output_path,expname,filename):
@@ -437,7 +436,24 @@ class postprocess:
         subprocess.check_call(['rsync', '-az', os.path.join(datapath, ICMGG), os.path.join(tmpdir, ICMGG)])
         # sp2gpl -> tmpdir
         subprocess.check_call(['cdo', 'sp2gpl', os.path.join(datapath, ICMSH), os.path.join(tmpdir, ICMSH)])
-
+        # extract relevant output fields and save to output directory
+        subprocess.check_call(['cdo', '-t', 'ecmwf', '-f', 'nc4', '-R', 'ml2pl,85000,50000,20000',
+                               os.path.join(tmpdir, ICMGG), os.path.join(tmpdir, 'gaus.nc')])
+        subprocess.check_call(['cdo', '-t', 'ecmwf', '-f', 'nc4', '-R', 'ml2pl,85000,50000,20000',
+                               os.path.join(tmpdir, ICMSH), os.path.join(tmpdir, 'spectral.nc')])
+        subprocess.check_call(['cdo', 'selvar,U,V,T,Z', '-selhour,0,6,12,18', os.path.join(tmpdir, 'spectral.nc'),
+                               os.path.join(tmpdir, 'sp-out.nc')])
+        subprocess.check_call(['cdo', 'selhour,0,6,12,18', os.path.join(tmpdir, 'gaus.nc'),
+                               os.path.join(tmpdir, 'gaus-out.nc')])
+        subprocess.check_call(['cdo', 'selvar,Q,PT,T2M,U10M,V10M,SLHF,SP,MSL,LSP,CP,TCC,SSR,STR,TSR,TTR,var8',
+                               os.path.join(tmpdir, 'gaus-out.nc'), os.path.join(tmpdir, 'gaus-out2.nc')])
+        # rename var8 to SRO (surface runoff)
+        subprocess.check_call(['cdo', 'chname,var8,SRO', os.path.join(tmpdir, 'gaus-out2.nc'),
+                               os.path.join(tmpdir, 'gaus-out3.nc')])
+        # merge output
+        outputfile = os.path.join(outputdir, "ECE_{}_{}.nc".format(expname, file_time))
+        subprocess.check_call(['cdo', 'merge', os.path.join(tmpdir, 'sp-out.nc'),
+                               os.path.join(tmpdir, 'gaus-out3.nc'), outputfile])
 
     def postprocess(self, tmpdir, expname, output_path):
         # set constants and sigma levels
