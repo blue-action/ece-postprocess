@@ -105,7 +105,7 @@ class postprocess:
                 self.runPostprocess(datapath, expname, postprocess)
             # check if we need to archive the original files
             if archive:
-                self.runArchive(archive, expname, datapath)
+                self.runArchive(archive, expname, datapath, remove=True)
         else:
             raise IOError("Output for leg {} not found".format(leg))
 
@@ -166,8 +166,7 @@ class postprocess:
         # check if original files need to be removed
         if remove:
             # remove original files
-            #shutil.rmtree(datapath)  # don't automatically remove for now
-            pass
+            shutil.rmtree(datapath)  # don't automatically remove for now
 
     @staticmethod
     def setConstants():
@@ -242,7 +241,7 @@ class postprocess:
             ##########################################################################
             # find starting time of leg from filename in leg directory
             filenames = [os.path.basename(f) for f in glob.glob(os.path.join(datapath, 'ICMGG*'))]
-            file_time = [a for a in [a.strip('ICMGG' + expname + '+') for a in filenames] if int(a)][0]
+            file_time = [a for a in [a.lstrip('ICMGG' + expname + '+') for a in filenames] if int(a)][0]
             print("Start retrieving datasets ICMSHECE and ICMGGECE for the time {}".format(file_time))
             logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time {}".format(file_time))
             ICMGGECE = pygrib.open(os.path.join(datapath, "ICMGG{}+{}".format(expname, file_time)))
