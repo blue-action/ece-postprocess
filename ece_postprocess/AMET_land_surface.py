@@ -444,7 +444,7 @@ class postprocess:
                                os.path.join(tmpdir, 'sp-out.nc')])
         subprocess.check_call(['cdo', 'selhour,0,6,12,18', os.path.join(tmpdir, 'gaus.nc'),
                                os.path.join(tmpdir, 'gaus-out.nc')])
-        subprocess.check_call(['cdo', 'selvar,Q,PT,T2M,U10M,V10M,SLHF,SP,MSL,LSP,CP,TCC,SSR,STR,TSR,TTR,var8',
+        subprocess.check_call(['cdo', 'selvar,Q,PT,T2M,U10M,V10M,SLHF,SP,MSL,LSP,CP,TCC,SSHF,SSR,STR,TSR,TTR,var8',
                                os.path.join(tmpdir, 'gaus-out.nc'), os.path.join(tmpdir, 'gaus-out2.nc')])
         # rename var8 to SRO (surface runoff)
         subprocess.check_call(['cdo', 'chname,var8,SRO', os.path.join(tmpdir, 'gaus-out2.nc'),
