@@ -8,42 +8,27 @@ The code aims to calculate the atmospheric meridional energy transport based on 
 2.vertical integral of zonally integrated meridional energy transport <br />
 <br />
 It also saves the following fields as netcdf files (3 hourly): <br />
-* Surface runoff                        [m] <br />
-* Sub-surface runoff                    [m] <br />
-* Snow albedo                           [0-1] <br />
-* Snow density                          [kg/m3] <br />
-* Volumetric soil water layer 1         [m3/m3] <br />
-* Volumetric soil water layer 2         [m3/m3] <br />
-* Volumetric soil water layer 3         [m3/m3] <br />
-* Volumetric soil water layer 4         [m3/m3] <br />
-* Soil temperature level 1              [K] <br />
-* Snow depth                            [m] <br />
-* Soil temperature level 2              [K] <br />
-* Soil temperature level 3              [K] <br />
-* Soil temperature level 4              [K] <br />
+* 6 hourly U, V, T, Z at 850, 500, 200 hPa <br />
+* Q,PT,T2M,U10M,V10M,SLHF,SP,MSL,LSP,CP,TCC,SSHF,SSR,STR,TSR,TTR <br />
 
-It needs two input parameters:<br />
-* time (eg. 197901)<br />
-* input and output path<br />
+The fields above are saved through the command line tool "CDO". <br>
 
-where time is obtained by sys.stdin.readline(), thus the script will be executed through: <br />
+Please run the script in the following folder to perform the post-processing:<br>
+ece-postprocess/ece_postprocess/scripts/
 ```
-$ python AMET_land_surface.py < input_time.txt
+$ python ece-postprocess --rundir <path> --expname <exp>
 ```
-The input and output path shall be specified inside the script (in the input zone). <br />
+The details about the arguments can be found inside the script.<br>
 
-The output from EC-Earth must have the standard name with the format as:
+The output from EC-Earth must be provided with the standard name as:<br>
 ```
-ICMGGECE3+197901 # output on gaussian grid
-ICMSHECE3+197901 # output on spectral coordinate, must be changed to gaussian grid
+ICMGG<exp>+<time> # output on gaussian grid
+ICMSH<exp>+<time> # output on spectral coordinate, must be changed to gaussian grid
 ```
-The script is recommended to be used together with the scheduler [job_scheduler.sh](https://github.com/blue-action/ece-postprocess/blob/master/job_scheduler.sh).
+where <exp> is the experiment name, and <time> is the time of the exp. They shoud be given as the argument. <br>
 
-## job_scheduler.sh
-This bash script aim to schedule and execute job for the post-processing of EC-Earth output on Cartesius.<br />
-The user must specify the following things:
-* starting and ending time (int)
-* copy EC-Earth output from project folder to customised place
-* use cdo to transfer the output on spectral coordinate to gaussian grid
-* execute the post-processing script [AMET_land_surface.py](https://github.com/geek-yang/ece-postprocess/blob/master/AMET_land_surface.py)
-* history record (log)
+The script is recommended to be used together with the workflow manager [suite.rc](https://github.com/blue-action/ece-postprocess/blob/master/cylc/suite.rc). <br>
+
+For more information about the algorithm of the mass budget correction, please refer to Trenberth, 1991.
+
+For more information about the algorithm of the computation of meridional energy transport, please refer to Trenberth and Caron, 2001.
