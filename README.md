@@ -29,7 +29,7 @@ In addition, the monthly mean of each component of meridional energy transport i
 * monthly mean meridional baratropic wind correction <br />
 * monthly mean zonal baratropic wind correction <br />
 
-The fields above are saved as two seperate files inclEach netCDF file containing all the fields above is approximately 7.6GB per month.
+The fields above are saved as two seperate files containing spatial information and zonal integral. The netCDF files are approximately 22MB per month.
 
 The fields above are saved through the command line tool "CDO". <br>
 
