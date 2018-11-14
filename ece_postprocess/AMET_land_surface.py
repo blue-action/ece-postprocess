@@ -251,7 +251,9 @@ class postprocess:
         ##########################################################################
         # find starting time of leg from filename in leg directory
         filenames = [os.path.basename(f) for f in glob.glob(os.path.join(datapath, 'ICMGG*'))]
-        file_time = [a for a in [a.lstrip('ICMGG' + expname + '+') for a in filenames] if int(a)][0]
+        file_times = [a for a in [a[-6:] for a in filenames] if a.isdigit()]
+        # get the timing that is not the initial state
+        file_time = file_times[np.argmax(file_times)]
         print("Start retrieving datasets ICMSHECE and ICMGGECE for the time {}".format(file_time))
         logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time {}".format(file_time))
         ICMGGECE = pygrib.open(os.path.join(datapath, "ICMGG{}+{}".format(expname, file_time)))
@@ -299,7 +301,9 @@ class postprocess:
         print('For more information, please check the ECMWF parameter base!')
         # use pygrib to read the grib files
         filenames = [os.path.basename(f) for f in glob.glob(os.path.join(datapath, 'ICMGG*'))]
-        file_time = [a for a in [a.lstrip('ICMGG' + expname + '+') for a in filenames] if int(a)][0]
+        file_times = [a for a in [a[-6:] for a in filenames] if a.isdigit()]
+        # get the timing that is not the initial state
+        file_time = file_times[np.argmax(file_times)]
         # read grib files
         ICMGGECE = pygrib.open(os.path.join(datapath, "ICMGG{}+{}".format(expname, file_time)))
         # enumerate the message and create a list for it
