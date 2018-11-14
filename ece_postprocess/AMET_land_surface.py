@@ -571,13 +571,11 @@ class postprocess:
         # define filenames
         ICMGG = "ICMGG{}+{}".format(expname, file_time)
         ICMSH = "ICMSH{}+{}".format(expname, file_time)
-        # rsync the guassian grid output
-        subprocess.check_call(['rsync', '-az', os.path.join(datapath, ICMGG), os.path.join(tmpdir, ICMGG)])
         # sp2gpl -> tmpdir
         subprocess.check_call(['cdo', 'sp2gpl', os.path.join(datapath, ICMSH), os.path.join(tmpdir, ICMSH)])
         # extract relevant output fields and save to output directory
         subprocess.check_call(['cdo', '-t', 'ecmwf', '-f', 'nc4', '-R', 'ml2pl,85000,50000,20000',
-                               os.path.join(tmpdir, ICMGG), os.path.join(tmpdir, 'gaus.nc')])
+                               os.path.join(datapath, ICMGG), os.path.join(tmpdir, 'gaus.nc')])
         subprocess.check_call(['cdo', '-t', 'ecmwf', '-f', 'nc4', '-R', 'ml2pl,85000,50000,20000',
                                os.path.join(tmpdir, ICMSH), os.path.join(tmpdir, 'spectral.nc')])
         subprocess.check_call(['cdo', 'selvar,U,V,T,Z', '-selhour,0,6,12,18', os.path.join(tmpdir, 'spectral.nc'),
