@@ -77,6 +77,7 @@ import tempfile
 # and factor 1/g: [J m2 / s3] * [s2 /m2] = [J / s] = [Wat]
 ##########################################################################
 
+
 class postprocess:
     def __init__(self, rundir, postprocess, archive, expname, leg):
         '''
@@ -97,7 +98,7 @@ class postprocess:
         ece_info = os.path.join(rundir, expname, 'ece.info')
         if "leg_number={}".format(leg) in open(ece_info).read():
             # format leg as str with leading zeros
-            leg = str(leg).zfill(3) 
+            leg = str(leg).zfill(3)
             # define the path where the output data of the experiment is saved
             datapath = os.path.join(rundir, expname, 'output', 'ifs', leg)
             # check if we need to do postprocessing
@@ -128,14 +129,14 @@ class postprocess:
             if e.errno != errno.EEXIST:
                 raise
         # logging level 'DEBUG' 'INFO' 'WARNING' 'ERROR' 'CRITICAL'
-        logging.basicConfig(filename = outputdir + os.sep + 'history.log',
-                            filemode = 'w+', level = logging.DEBUG,
-                            format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        logging.basicConfig(filename=outputdir + os.sep + 'history.log',
+                            filemode='w+', level = logging.DEBUG,
+                            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         # convert sp2gpl and copy to tmpdir
         tmpdir = tempfile.mkdtemp(dir=outputdir)
         self.sp2gpl(datapath, expname, outputdir, tmpdir)
         # actual postprocessing
-        self.postprocess(tmpdir, expname, outputdir)
+        self.postprocess(datapath, tmpdir, expname, outputdir)
         # remove tmpdir
         shutil.rmtree(tmpdir)
 
@@ -162,7 +163,8 @@ class postprocess:
             if e.errno != errno.EEXIST:
                 raise
         # archive using rsync
-        subprocess.check_call(['rsync', '-az', '--recursive', datapath, archive_dir])
+        subprocess.check_call(['rsync', '-az', '--recursive',
+                               datapath, archive_dir])
         # check if original files need to be removed
         if remove:
             # remove original files
@@ -172,18 +174,18 @@ class postprocess:
     def setConstants():
         '''
         Define constants used in the calculations
-        
+
         returns: dictionary with constants for g, R. cp, Lv, R_dry and R_vap
         rtype: dict
         '''
         # define the constant:
-        constant = {'g' : 9.80616,      # gravititional acceleration [m / s2]
-                    'R' : 6371009,      # radius of the earth [m]
+        constant = {'g': 9.80616,      # gravititional acceleration [m / s2]
+                    'R': 6371009,      # radius of the earth [m]
                     'cp': 1004.64,      # heat capacity of air [J/(Kg*K)]
                     'Lv': 2264670,      # Latent heat of vaporization [J/Kg]
-                    'R_dry' : 286.9,    # gas constant of dry air [J/(kg*K)]
-                    'R_vap' : 461.5,    # gas constant for water vapour [J/(kg*K)]
-                   }
+                    'R_dry': 286.9,    # gas constant of dry air [J/(kg*K)]
+                    'R_vap': 461.5,    # gas constant for water vapour [J/(kg*K)]
+                    }
         return constant
 
     @staticmethod
@@ -191,11 +193,12 @@ class postprocess:
         '''
         Definine sigma levels
 
-        returns: tuple containing arrays with A and B values for the definition of
-                 sigma levellist
+        returns: tuple containing arrays with A and B values for the
+                 definition of sigma levellist
         rtype: tuple
         '''
-        # Since there are 60 model levels, there are 61 half levels, so it is for A and B values
+        # Since there are 60 model levels, there are 61 half levels, so it is
+        # for A and B values
         # the unit of A is Pa!!!!!!!!!!!!
         # from surface to TOA
         A = np.array([0.0, 2.00004, 3.980832, 7.387186, 12.908319, 21.413612, 33.952858,
@@ -228,11 +231,11 @@ class postprocess:
                       0.626559, 0.662934, 0.698224, 0.732224, 0.764679, 0.795385,
                       0.824185, 0.85095, 0.875518, 0.897767, 0.917651, 0.935157,
                       0.950274, 0.963007, 0.973466, 0.982238, 0.989153, 0.994204, 0.99763, 1.0],dtype=float)
-        return (A,B)
+        return (A, B)
 
 
     @staticmethod
-    def var_key_retrieve(datapath, expname, index_dict):
+    def var_key_retrieve(datapath, tmpdir, expname, index_dict):
         """
         Obtain basic parameters from GRIB file for further computation.
         param datapath: path of input grib file
@@ -250,14 +253,15 @@ class postprocess:
         #                  PLEASE DON'T RETRIVE BACKWARD!                        #
         ##########################################################################
         # find starting time of leg from filename in leg directory
-        filenames = [os.path.basename(f) for f in glob.glob(os.path.join(datapath, 'ICMGG*'))]
+        filenames = [os.path.basename(f) for f in
+                     glob.glob(os.path.join(datapath, 'ICMGG*'))]
         file_times = [a for a in [a[-6:] for a in filenames] if a.isdigit()]
         # get the timing that is not the initial state
         file_time = file_times[np.argmax(file_times)]
         print("Start retrieving datasets ICMSHECE and ICMGGECE for the time {}".format(file_time))
         logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time {}".format(file_time))
         ICMGGECE = pygrib.open(os.path.join(datapath, "ICMGG{}+{}".format(expname, file_time)))
-        ICMSHECE = pygrib.open(os.path.join(datapath, "ICMSH{}+{}".format(expname, file_time)))
+        ICMSHECE = pygrib.open(os.path.join(tmpdir, "ICMSH{}+{}".format(expname, file_time)))
         print("Retrieving datasets successfully and return the key!")
         # extract the basic information about the dataset
         num_message_SH = ICMSHECE.messages
@@ -553,7 +557,7 @@ class postprocess:
         type outputdir:
         type tmpdir:
         '''
-        # create/cleanup tmpdir       
+        # create/cleanup tmpdir
         try:
             shutil.rmtree(tmpdir)  # cleanup tmpdir
         except OSError:
@@ -564,35 +568,49 @@ class postprocess:
             if e.errno != errno.EEXIST:
                 raise
         # get filenames to convert
-        filenames = [os.path.basename(f) for f in glob.glob(os.path.join(datapath, 'ICMGG*'))]
-        file_time = [a for a in [a.lstrip('ICMGG{}+'.format(expname)) for a in filenames] if int(a)][0]
+        filenames = [os.path.basename(f) for f in
+                     glob.glob(os.path.join(datapath, 'ICMGG*'))]
+        file_time = [a for a in [a.lstrip('ICMGG{}+'.format(expname)) for a in
+                                 filenames] if int(a)][0]
         print("Start retrieving datasets ICMSHECE and ICMGGECE for the time {}".format(file_time))
         logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time {}".format(file_time))
         # define filenames
         ICMGG = "ICMGG{}+{}".format(expname, file_time)
         ICMSH = "ICMSH{}+{}".format(expname, file_time)
         # sp2gpl -> tmpdir
-        subprocess.check_call(['cdo', 'sp2gpl', os.path.join(datapath, ICMSH), os.path.join(tmpdir, ICMSH)])
+        subprocess.check_call(['cdo', 'sp2gpl', os.path.join(datapath, ICMSH),
+                               os.path.join(tmpdir, ICMSH)])
         # extract relevant output fields and save to output directory
-        subprocess.check_call(['cdo', '-t', 'ecmwf', '-f', 'nc4', '-R', 'ml2pl,85000,50000,20000',
-                               os.path.join(datapath, ICMGG), os.path.join(tmpdir, 'gaus.nc')])
-        subprocess.check_call(['cdo', '-t', 'ecmwf', '-f', 'nc4', '-R', 'ml2pl,85000,50000,20000',
-                               os.path.join(tmpdir, ICMSH), os.path.join(tmpdir, 'spectral.nc')])
-        subprocess.check_call(['cdo', 'selvar,U,V,T,Z', '-selhour,0,6,12,18', os.path.join(tmpdir, 'spectral.nc'),
+        subprocess.check_call(['cdo', '-t', 'ecmwf', '-f', 'nc4', '-R',
+                               'ml2pl,85000,50000,20000',
+                               os.path.join(datapath, ICMGG),
+                               os.path.join(tmpdir, 'gaus.nc')])
+        subprocess.check_call(['cdo', '-t', 'ecmwf', '-f', 'nc4', '-R',
+                               'ml2pl,85000,50000,20000',
+                               os.path.join(tmpdir, ICMSH),
+                               os.path.join(tmpdir, 'spectral.nc')])
+        subprocess.check_call(['cdo', 'selvar,U,V,T,Z', '-selhour,0,6,12,18',
+                               os.path.join(tmpdir, 'spectral.nc'),
                                os.path.join(tmpdir, 'sp-out.nc')])
-        subprocess.check_call(['cdo', 'selhour,0,6,12,18', os.path.join(tmpdir, 'gaus.nc'),
+        subprocess.check_call(['cdo', 'selhour,0,6,12,18',
+                               os.path.join(tmpdir, 'gaus.nc'),
                                os.path.join(tmpdir, 'gaus-out.nc')])
         subprocess.check_call(['cdo', 'selvar,Q,PT,T2M,U10M,V10M,SLHF,SP,MSL,LSP,CP,TCC,SSHF,SSR,STR,TSR,TTR,var8',
-                               os.path.join(tmpdir, 'gaus-out.nc'), os.path.join(tmpdir, 'gaus-out2.nc')])
+                               os.path.join(tmpdir, 'gaus-out.nc'),
+                               os.path.join(tmpdir, 'gaus-out2.nc')])
         # rename var8 to SRO (surface runoff)
-        subprocess.check_call(['cdo', 'chname,var8,SRO', os.path.join(tmpdir, 'gaus-out2.nc'),
+        subprocess.check_call(['cdo', 'chname,var8,SRO',
+                               os.path.join(tmpdir, 'gaus-out2.nc'),
                                os.path.join(tmpdir, 'gaus-out3.nc')])
         # merge output
-        outputfile = os.path.join(outputdir, "ECE_{}_{}.nc".format(expname, file_time))
-        subprocess.check_call(['cdo', 'merge', os.path.join(tmpdir, 'sp-out.nc'),
-                               os.path.join(tmpdir, 'gaus-out3.nc'), outputfile])
+        outputfile = os.path.join(outputdir, "ECE_{}_{}.nc".format(expname,
+                                                                   file_time))
+        subprocess.check_call(['cdo', 'merge',
+                               os.path.join(tmpdir, 'sp-out.nc'),
+                               os.path.join(tmpdir, 'gaus-out3.nc'),
+                               outputfile])
 
-    def postprocess(self, tmpdir, expname, output_path):
+    def postprocess(self, datapath, tmpdir, expname, output_path):
         """
         Postprocess module to perform the mass budget correction and
         calculate the meridional energy transport in the atmosphere.
@@ -616,7 +634,7 @@ class postprocess:
         ######  use pygrib.open to get the key from ec-earth outputs  ######
         ####################################################################
         ICMSHECE, ICMGGECE, num_message_SH, num_message_GG, num_record, days,\
-        latitude, longitude, file_time = self.var_key_retrieve(tmpdir, expname, index_dict)
+        latitude, longitude, file_time = self.var_key_retrieve(datapath, tmpdir, expname, index_dict)
         ####################################################################
         ######       Extract invariant and calculate constants       #######
         ####################################################################
