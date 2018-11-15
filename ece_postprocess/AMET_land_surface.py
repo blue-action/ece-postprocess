@@ -605,7 +605,7 @@ class postprocess:
         # merge output
         outputfile = os.path.join(outputdir, "ECE_{}_{}.nc".format(expname,
                                                                    file_time))
-        subprocess.check_call(['cdo', 'merge',
+        subprocess.check_call(['cdo', '-O', 'merge',
                                os.path.join(tmpdir, 'sp-out.nc'),
                                os.path.join(tmpdir, 'gaus-out3.nc'),
                                outputfile])
