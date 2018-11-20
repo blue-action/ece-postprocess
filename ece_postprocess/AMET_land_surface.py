@@ -605,6 +605,10 @@ class postprocess:
         # merge output
         outputfile = os.path.join(outputdir, "ECE_{}_{}.nc".format(expname,
                                                                    file_time))
+        # remove existing outputfile
+        if os.path.exists(outputfile):
+            os.remove(outputfile)
+        # create outputfile by merging sp and gaus
         subprocess.check_call(['cdo', '-O', 'merge',
                                os.path.join(tmpdir, 'sp-out.nc'),
                                os.path.join(tmpdir, 'gaus-out3.nc'),
