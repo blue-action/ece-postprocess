@@ -287,7 +287,7 @@ class postprocess:
         return ICMSHECE, ICMGGECE, num_message_SH, num_message_GG, num_record, days, latitude, longitude, file_time
 
     @staticmethod
-    def message_reader(datapath, expname):
+    def message_reader(datapath, tmpdir, expname):
         """
         This function serves to read the message list of each GRIB file.
         The message number of each variable that will be used in the computation
@@ -314,14 +314,13 @@ class postprocess:
         #namelist_GG_pygrib = [i for i in ICMGGECE] # ignore the first 2
         namelist_GG = []
         # read the first 1000 messages and append them to a list
-        for i in np.arange(1,1000,1):
+        for i in np.arange(1, 1000, 1):
             name = ICMGGECE.message(i)
             namelist_GG.append(str(name)) # the message should be converted to str, otherwise remain grib-message
         ICMGGECE.close()
-        ICMSHECE = pygrib.open(os.path.join(datapath, "ICMSH{}+{}".format(expname, file_time)))
-        #namelist_SH_pygrib = [i for i in ICMSHECE]
+        ICMSHECE = pygrib.open(os.path.join(tmpdir, "ICMSH{}+{}".format(expname, file_time)))
         namelist_SH = []
-        for i in np.arange(1,1000,1):
+        for i in np.arange(1, 1000, 1):
             name = ICMSHECE.message(i)
             namelist_SH.append(str(name))
         ICMSHECE.close()
@@ -330,12 +329,12 @@ class postprocess:
         # calculate the number of messages per record
         message_1st = namelist_GG[0]
         for i, s in enumerate(namelist_GG[1:]):
-            if message_1st[2:-30] in s: # skip "1:"
+            if message_1st[2:-30] in s:  # skip "1:"
                 index_dict['num_GG_per'] = i + 1
                 break
         message_1st = namelist_SH[0]
         for i, s in enumerate(namelist_SH[1:]):
-            if message_1st[2:-20] in s: # skip "1:"
+            if message_1st[2:-20] in s:  # skip "1:"
                 index_dict['num_SH_per'] = i + 1
                 break
         # list of standard variable name as message in GRIB from ECMWF
@@ -633,7 +632,7 @@ class postprocess:
         ####  use pygrib to get the message list from ec-earth outputs  ####
         ####  the message list is used to calc. the index of variables  ####
         ####################################################################
-        index_dict = self.message_reader(tmpdir, expname)
+        index_dict = self.message_reader(datapath, tmpdir, expname)
         ####################################################################
         ######  use pygrib.open to get the key from ec-earth outputs  ######
         ####################################################################
