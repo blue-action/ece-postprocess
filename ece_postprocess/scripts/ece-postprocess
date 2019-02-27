@@ -12,6 +12,7 @@ import configargparse
 import sys
 import os
 from ece_postprocess import AMET_land_surface
+from pathos.multiprocessing import ProcessPool as Pool
 
 
 class FullPaths(configargparse.Action):
@@ -50,12 +51,18 @@ def sha256_checksum(filename, block_size=65536):
             sha256.update(block)
     return sha256.hexdigest()
 
+def makelist(a, length):
+    '''
+    return a list of length repeating elements of a)
+    '''
+    return [a for i in range(0, length)]
 
 def cli_parser():
     '''
     parse command line arguments:
     '''
-    cfile = os.path.join(sys.prefix, 'etc', 'ece-postprocess', 'ece-postprocess.config')
+    cfile = os.path.join(sys.prefix, 'etc', 'ece-postprocess',
+                         'ece-postprocess.config')
     parser = configargparse.ArgumentParser(
       default_config_files=[cfile],
       description='Postprocess and archive EC-EARTH output')
@@ -63,6 +70,8 @@ def cli_parser():
                help='config file path')
     parser.add('--leg', required=True, type=int,
                help='EC-EARTH leg number')
+    parser.add('--nlegs', required=False, type=int,
+               default=1, help='Also process (n-1) previous legs')
     parser.add('--rundir', help='run directory [path]', type=is_dir,
                action=FullPaths, env_var='ece_rundir', required=True)
     parser.add('--postprocess', help='output directory [path]', type=is_dir,
@@ -77,6 +86,17 @@ def cli_parser():
 
 if __name__ == "__main__":
     results = cli_parser()
-    AMET_land_surface.postprocess(results.rundir, results.postprocess,
-                                  results.archive, results.expname,
-                                  results.leg)
+    if (results.nlegs == 1):
+        AMET_land_surface.postprocess(results.rundir, results.postprocess,
+                                      results.archive, results.expname,
+                                      results.leg)
+    elif (results.nlegs > 1):
+        # process multiple legs
+        legs = list(range(results.leg - (results.nlegs - 1), results.leg + 1))
+        pool = Pool()
+        pool.map(AMET_land_surface.postprocess,
+                 makelist(results.rundir, len(legs)),
+                 makelist(results.postprocess, len(legs)),
+                 makelist(results.archive, len(legs)),
+                 makelist(results.expname, len(legs)),
+                 legs)

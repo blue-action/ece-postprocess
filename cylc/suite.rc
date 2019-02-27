@@ -11,6 +11,7 @@ Postprocess EC-EARTH output for the Blue Action project"""
 {% set ARCHIVE = "/projects/0/blueactn/archive/" %}
 {% set START_LEG = "1" %}
 {% set END_LEG = "2" %}
+{% set NUMLEGS = "1" %}
 
 [scheduling]
     cycling mode = integer
@@ -37,7 +38,7 @@ Postprocess EC-EARTH output for the Blue Action project"""
     [[postprocess]]
         retry delays = 48*PT6H
         script = """
-ece-postprocess --rundir={{RUNDIR}} --expname={{EXPNAME}} --postprocess={{POSTPROCESS}} --leg=${CYLC_TASK_CYCLE_POINT}
+ece-postprocess --rundir={{RUNDIR}} --expname={{EXPNAME}} --postprocess={{POSTPROCESS}} --leg=${CYLC_TASK_CYCLE_POINT} --nlegs={{NUMLEGS}}
 """
         [[[job]]]
             batch system = slurm
@@ -50,7 +51,7 @@ ece-postprocess --rundir={{RUNDIR}} --expname={{EXPNAME}} --postprocess={{POSTPR
     [[archive]]
         retry delays = 48*PT6H
         script = """
-ece-postprocess --rundir={{RUNDIR}} --expname={{EXPNAME}} --archive={{ARCHIVE}} --leg=${CYLC_TASK_CYCLE_POINT}
+ece-postprocess --rundir={{RUNDIR}} --expname={{EXPNAME}} --archive={{ARCHIVE}} --leg=${CYLC_TASK_CYCLE_POINT} --nlegs={{NUMLEGS}}
 """
         [[[job]]]
             batch system = slurm
