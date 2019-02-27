@@ -29,5 +29,6 @@ setup(
         "License :: OSI Approved :: Apache Software License",
     ],
     install_requires=['python-dateutil', 'numpy', 'netCDF4',
-                      'matplotlib', 'pyproj', 'pygrib', 'configargparse'],
+                      'matplotlib', 'pyproj', 'pygrib', 'configargparse',
+                      'pathos'],
 )
