@@ -569,8 +569,10 @@ class postprocess:
         # get filenames to convert
         filenames = [os.path.basename(f) for f in
                      glob.glob(os.path.join(datapath, 'ICMGG*'))]
-        file_time = [a for a in [a.lstrip('ICMGG{}+'.format(expname)) for a in
-                                 filenames] if int(a)][0]
+        file_times = [a for a in [a[-6:] for a in filenames] if a.isdigit()]
+        # get the timing that is not the initial state
+        file_time = file_times[np.argmax(file_times)]
+
         print("Start retrieving datasets ICMSHECE and ICMGGECE for the time {}".format(file_time))
         logging.info("Start retrieving variables T,q,u,v,sp,gz for from ICMSHECE and ICMGGECE for the time {}".format(file_time))
         # define filenames
@@ -588,9 +590,12 @@ class postprocess:
                                'ml2pl,85000,50000,20000',
                                os.path.join(tmpdir, ICMSH),
                                os.path.join(tmpdir, 'spectral.nc')])
-        subprocess.check_call(['cdo', 'selvar,U,V,T,Z', '-selhour,0,6,12,18',
+        subprocess.check_call(['cdo', 'selhour,0,6,12,18',
                                os.path.join(tmpdir, 'spectral.nc'),
                                os.path.join(tmpdir, 'sp-out.nc')])
+        subprocess.check_call(['cdo', 'selvar,U,V,T,Z',
+                               os.path.join(tmpdir, 'sp-out.nc'),
+                               os.path.join(tmpdir, 'sp-out2.nc')])
         subprocess.check_call(['cdo', 'selhour,0,6,12,18',
                                os.path.join(tmpdir, 'gaus.nc'),
                                os.path.join(tmpdir, 'gaus-out.nc')])
@@ -609,7 +614,7 @@ class postprocess:
             os.remove(outputfile)
         # create outputfile by merging sp and gaus
         subprocess.check_call(['cdo', '-O', 'merge',
-                               os.path.join(tmpdir, 'sp-out.nc'),
+                               os.path.join(tmpdir, 'sp-out2.nc'),
                                os.path.join(tmpdir, 'gaus-out3.nc'),
                                outputfile])
 
